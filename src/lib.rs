@@ -145,14 +145,3 @@ int vp_find_nearest(const vp_handle *handle, const vp_item *needle) {
     vp_search_node(handle->root, needle, &best_candidate, handle->get_distance);
     return best_candidate.idx;
 }
-
-static void vp_free_node(vp_node *node) {
-    if (node->near) vp_free_node(node->near);
-    if (node->far) vp_free_node(node->far);
-    free(node);
-}
-
-void vp_free(vp_handle *handle) {
-    vp_free_node(handle->root);
-    free(handle);
-}
