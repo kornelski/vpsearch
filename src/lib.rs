@@ -1,26 +1,25 @@
-#include "vp.h"
-#include <stdlib.h>
-#include <float.h>
 
-typedef struct vp_node {
-    struct vp_node *near, *far;
-    const vp_item *vantage_point; // Pointer to the item (value) represented by the current node
-    vp_distance radius;           // How far the `near` node stretches
-    unsigned int idx;             // Index of the `vantage_point` in the original items array
-} vp_node;
+type Distance = f32;
 
-struct vp_handle {
-    vp_node *root;
-    vp_distance_callback *get_distance;
-};
+struct Node<Item> {
+    near: Option<Box<Node<Item>>>,
+    far: Option<Box<Node<Item>>>,
+    vantage_point: Item, // Pointer to the item (value) represented by the current node
+    radius: Distance,    // How far the `near` node stretches
+    idx: usize,             // Index of the `vantage_point` in the original items array
+}
+
+struct Handle<Item> {
+    root: Box<Node<Item>>,
+}
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
    (also used during search to hold the two properties).
 */
-typedef struct vp_tmp {
-    vp_distance distance;
-    unsigned int idx;
-} vp_tmp;
+struct Tmp {
+    distance: Distance,
+    idx: usize,
+}
 
 static int vp_compare_distance(const void *ap, const void *bp) {
     vp_distance a = ((const vp_tmp*)ap)->distance;
