@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
-type Distance = f32;
+pub type Distance = f32;
 
-trait MetricSpace {
+pub trait MetricSpace {
     fn distance(&self, other: &Self) -> Distance;
 }
 
@@ -14,7 +14,7 @@ struct Node<Item: MetricSpace + Copy> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
-struct Handle<Item: MetricSpace + Copy> {
+pub struct Handle<Item: MetricSpace + Copy> {
     root: Node<Item>,
 }
 
@@ -81,7 +81,7 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
      * @param  get_distance A callback function that will calculdate distance between two items given their pointers.
      * @return              NULL on error or a handle that must be freed with vp_free().
      */
-    fn new(items: &[Item]) -> Handle<Item> {
+    pub fn new(items: &[Item]) -> Handle<Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance:0.0,
         }).collect();
@@ -131,7 +131,7 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
      * @param  needle       The query.
      * @return              Index of the nearest item found.
      */
-    fn find_nearest(&self, needle: &Item) -> usize {
+    pub fn find_nearest(&self, needle: &Item) -> usize {
         let mut best_candidate = Tmp{
             distance: std::f32::MAX,
             idx: 0,
