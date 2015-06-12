@@ -104,34 +104,38 @@ vp_handle *vp_init(vp_item *const items[], const int num_items, vp_distance_call
     return handle;
 }
 
-static void vp_search_node(const vp_node *node, const vp_item *needle, vp_tmp *best_candidate, vp_distance_callback *get_distance) {
-    const vp_distance distance = get_distance(node->vantage_point, needle);
+    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp) {
+        let distance = needle.distance(&node.vantage_point);
 
-    if (distance < best_candidate->distance) {
-        best_candidate->distance = distance;
-        best_candidate->idx = node->idx;
-    }
+        if distance < best_candidate.distance {
+            best_candidate.distance = distance;
+            best_candidate.idx = node.idx;
+        }
 
-    // Recurse towards most likely candidate first to narrow best candidate's distance as soon as possible
-    if (distance < node->radius) {
-        if (node->near) {
-            vp_search_node(node->near, needle, best_candidate, get_distance);
-        }
-        // The best node (final answer) may be just ouside the radius, but not farther than
-        // the best distance we know so far. The vp_search_node above should have narrowed
-        // best_candidate->distance, so this path is rarely taken.
-        if (node->far && distance >= node->radius - best_candidate->distance) {
-            vp_search_node(node->far, needle, best_candidate, get_distance);
-        }
-    } else {
-        if (node->far) {
-            vp_search_node(node->far, needle, best_candidate, get_distance);
-        }
-        if (node->near && distance <= node->radius + best_candidate->distance) {
-            vp_search_node(node->near, needle, best_candidate, get_distance);
+        // Recurse towards most likely candidate first to narrow best candidate's distance as soon as possible
+        if distance < node.radius {
+            if let Some(ref near) = node.near {
+                Self::search_node(&*near, needle, best_candidate);
+            }
+            // The best node (final answer) may be just ouside the radius, but not farther than
+            // the best distance we know so far. The search_node above should have narrowed
+            // best_candidate.distance, so this path is rarely taken.
+            if let Some(ref far) = node.far {
+                if distance >= node.radius - best_candidate.distance {
+                    Self::search_node(&*far, needle, best_candidate);
+                }
+            }
+        } else {
+            if let Some(ref far) = node.far {
+                Self::search_node(&*far, needle, best_candidate);
+            }
+            if let Some(ref near) = node.near {
+                if distance <= node.radius + best_candidate.distance {
+                    Self::search_node(&*near, needle, best_candidate);
+                }
+            }
         }
     }
-}
 
     /**
      * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
