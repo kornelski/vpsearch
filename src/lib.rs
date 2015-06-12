@@ -1,7 +1,12 @@
+use std::cmp::Ordering;
 
 type Distance = f32;
 
-struct Node<Item> {
+trait MetricSpace {
+    fn distance(&self, other: &Self) -> Distance;
+}
+
+struct Node<Item: MetricSpace + Copy> {
     near: Option<Box<Node<Item>>>,
     far: Option<Box<Node<Item>>>,
     vantage_point: Item, // Pointer to the item (value) represented by the current node
@@ -9,8 +14,8 @@ struct Node<Item> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
-struct Handle<Item> {
-    root: Box<Node<Item>>,
+struct Handle<Item: MetricSpace + Copy> {
+    root: Node<Item>,
 }
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
@@ -21,58 +26,49 @@ struct Tmp {
     idx: usize,
 }
 
-impl<Item> Handle<Item> {
+impl<Item: MetricSpace + Copy> Handle<Item> {
 
-static int vp_compare_distance(const void *ap, const void *bp) {
-    vp_distance a = ((const vp_tmp*)ap)->distance;
-    vp_distance b = ((const vp_tmp*)bp)->distance;
-    return a > b ? 1 : -1;
-}
-
-static void vp_sort_indexes_by_distance(const vp_item *vantage_point, vp_tmp *indexes, int num_indexes, vp_item *const items[], vp_distance_callback *get_distance) {
-    for(int i=0; i < num_indexes; i++) {
-        indexes[i].distance = get_distance(vantage_point, items[indexes[i].idx]);
-    }
-    qsort(indexes, num_indexes, sizeof(indexes[0]), vp_compare_distance);
-}
-
-static vp_node *vp_create_node(vp_tmp *indexes, int num_indexes, vp_item *const items[], vp_distance_callback *get_distance) {
-    if (num_indexes <= 0) {
-        return NULL;
+    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp], items: &[Item]) {
+        for i in indexes.iter_mut() {
+            i.distance = vantage_point.distance(&items[i.idx]);
+        }
+        indexes.sort_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
     }
 
-    vp_node *node = calloc(1, sizeof(node[0]));
+    fn create_node(indexes: &mut [Tmp], items: &[Item]) -> Option<Node<Item>> {
+        if indexes.len() == 0 {
+            return None;
+        }
 
-    if (num_indexes == 1) {
-        *node = (vp_node){
-            .vantage_point = items[indexes[0].idx],
-            .idx = indexes[0].idx,
-            .radius = FLT_MAX,
-        };
-        return node;
+        if indexes.len() == 1 {
+            return Some(Node{
+                near: None, far: None,
+                vantage_point: items[indexes[0].idx],
+                idx: indexes[0].idx,
+                radius: std::f32::MAX,
+            });
+        }
+
+        let ref_idx = indexes[0].idx;
+
+        // Removes the `ref_idx` item from remaining items, because it's included in the current node
+        let rest = &mut indexes[1..];
+
+        Self::sort_indexes_by_distance(items[ref_idx], rest, items);
+
+        // Remaining items are split by the median distance
+        let half_idx = rest.len()/2;
+
+        let (near_indexes, far_indexes) = rest.split_at_mut(half_idx);
+
+        Some(Node{
+            vantage_point: items[ref_idx],
+            idx: ref_idx,
+            radius: far_indexes[0].distance,
+            near: Self::create_node(near_indexes, items).map(|i| Box::new(i)),
+            far: Self::create_node(far_indexes, items).map(|i| Box::new(i)),
+        })
     }
-
-    const int ref_idx = indexes[0].idx;
-
-    // Removes the `ref_idx` item from remaining items, because it's included in the current node
-    indexes = &indexes[1];
-    num_indexes -= 1;
-
-    vp_sort_indexes_by_distance(items[ref_idx], indexes, num_indexes, items, get_distance);
-
-    // Remaining items are split by the median distance
-    const int half_idx = num_indexes/2;
-
-    *node = (vp_node){
-        .vantage_point = items[ref_idx],
-        .idx = ref_idx,
-        .radius = indexes[half_idx].distance,
-    };
-    node->near = vp_create_node(indexes, half_idx, items, get_distance);
-    node->far = vp_create_node(&indexes[half_idx], num_indexes - half_idx, items, get_distance);
-
-    return node;
-}
 
     /**
      * Create a Vantage Point tree for fast nearest neighbor search.
@@ -85,13 +81,13 @@ static vp_node *vp_create_node(vp_tmp *indexes, int num_indexes, vp_item *const 
      * @param  get_distance A callback function that will calculdate distance between two items given their pointers.
      * @return              NULL on error or a handle that must be freed with vp_free().
      */
-    fn new(items: &[Item]) -> Handle {
-        let mut indexes = (0..items.len()).map(|i| Tmp{
+    fn new(items: &[Item]) -> Handle<Item> {
+        let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance:0.0,
         }).collect();
 
         Handle {
-            root: Self::create_node(&indexes, items),
+            root: Self::create_node(&mut indexes[..], items).unwrap(),
         }
     }
 
@@ -140,7 +136,7 @@ static vp_node *vp_create_node(vp_tmp *indexes, int num_indexes, vp_item *const 
             distance: std::f32::MAX,
             idx: 0,
         };
-        Self::search_node(&*self.root, needle, &mut best_candidate);
+        Self::search_node(&self.root, needle, &mut best_candidate);
         return best_candidate.idx;
     }
 }
