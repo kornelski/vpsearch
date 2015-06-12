@@ -21,6 +21,8 @@ struct Tmp {
     idx: usize,
 }
 
+impl<Item> Handle<Item> {
+
 static int vp_compare_distance(const void *ap, const void *bp) {
     vp_distance a = ((const vp_tmp*)ap)->distance;
     vp_distance b = ((const vp_tmp*)bp)->distance;
@@ -131,17 +133,19 @@ static void vp_search_node(const vp_node *node, const vp_item *needle, vp_tmp *b
     }
 }
 
-/**
- * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
- *
- * @param  handle       VP tree from vp_init(). Must not be NULL.
- * @param  needle       The query.
- * @return              Index of the nearest item found.
- */
-int vp_find_nearest(const vp_handle *handle, const vp_item *needle) {
-    vp_tmp best_candidate = {
-        .distance = FLT_MAX,
-    };
-    vp_search_node(handle->root, needle, &best_candidate, handle->get_distance);
-    return best_candidate.idx;
+    /**
+     * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
+     *
+     * @param  handle       VP tree from vp_init(). Must not be NULL.
+     * @param  needle       The query.
+     * @return              Index of the nearest item found.
+     */
+    fn find_nearest(&self, needle: &Item) -> usize {
+        let mut best_candidate = Tmp{
+            distance: std::f32::MAX,
+            idx: 0,
+        };
+        Self::search_node(&*self.root, needle, &mut best_candidate);
+        return best_candidate.idx;
+    }
 }
