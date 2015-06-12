@@ -1,4 +1,9 @@
 [package]
 name = "vpsearch"
 version = "0.1.0"
-authors = ["Kornel Lesiński <kornel@geekhood.net>"]
+authors = ["Kornel <pornel@pornel.net>"]
+description = "Vantage Point Tree search algorithm for fast nearest neighbour search in multi-dimensional metric spaces."
+homepage = "https://github.com/pornel/vpsearch"
+repository = "https://github.com/pornel/vpsearch.git"
+keywords = ["similarity", "search","knn","distance"]
+license = "BSD-2-Clause"
