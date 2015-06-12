@@ -1,0 +1,4 @@
+[package]
+name = "vpsearch"
+version = "0.1.0"
+authors = ["Kornel Lesiński <kornel@geekhood.net>"]
