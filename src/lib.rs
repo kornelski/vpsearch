@@ -74,35 +74,26 @@ static vp_node *vp_create_node(vp_tmp *indexes, int num_indexes, vp_item *const 
     return node;
 }
 
-/**
- * Create a Vantage Point tree for fast nearest neighbor search.
- *
- * Note that the callback must return distances that meet triangle inequality.
- * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
- *
- * @param  items        Array of pointers to items that will be searched. Must not be freed until the tree is freed!
- * @param  num_items    Number of items in the array. Must be > 0
- * @param  get_distance A callback function that will calculdate distance between two items given their pointers.
- * @return              NULL on error or a handle that must be freed with vp_free().
- */
-vp_handle *vp_init(vp_item *const items[], const int num_items, vp_distance_callback *const get_distance) {
-    if (!items || num_items <= 0 || !get_distance) {
-        return NULL;
+    /**
+     * Create a Vantage Point tree for fast nearest neighbor search.
+     *
+     * Note that the callback must return distances that meet triangle inequality.
+     * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
+     *
+     * @param  items        Array of pointers to items that will be searched. Must not be freed until the tree is freed!
+     * @param  num_items    Number of items in the array. Must be > 0
+     * @param  get_distance A callback function that will calculdate distance between two items given their pointers.
+     * @return              NULL on error or a handle that must be freed with vp_free().
+     */
+    fn new(items: &[Item]) -> Handle {
+        let mut indexes = (0..items.len()).map(|i| Tmp{
+            idx:i, distance:0.0,
+        }).collect();
+
+        Handle {
+            root: Self::create_node(&indexes, items),
+        }
     }
-
-    vp_tmp indexes[num_items];
-
-    for(int i=0; i < num_items; i++) {
-        indexes[i].idx = i;
-    }
-
-    vp_handle *handle = malloc(sizeof(handle[0]));
-    *handle = (vp_handle){
-        .root = vp_create_node(indexes, num_items, items, get_distance),
-        .get_distance = get_distance,
-    };
-    return handle;
-}
 
     fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp) {
         let distance = needle.distance(&node.vantage_point);
