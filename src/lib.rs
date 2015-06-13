@@ -143,15 +143,15 @@ impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
      * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
      *
      * @param  needle       The query.
-     * @return              Index of the nearest item found.
+     * @return              Index of the nearest item found and the distance from the nearest item
      */
-    pub fn find_nearest(&self, needle: &Item) -> usize {
+    pub fn find_nearest(&self, needle: &Item) -> (usize, Distance) {
         let mut best_candidate = Tmp{
             distance: std::f32::MAX,
             idx: 0,
         };
         Self::search_node(&self.root, needle, &mut best_candidate, self.user_data);
 
-        best_candidate.idx
+        (best_candidate.idx, best_candidate.distance)
     }
 }

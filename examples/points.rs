@@ -20,7 +20,7 @@ fn main() {
 
     let vp = vpsearch::Tree::new(&points);
 
-    let index = vp.find_nearest(&Point{x:1.0,y:2.0});
+    let (index, _) = vp.find_nearest(&Point{x:1.0,y:2.0});
 
     println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
 }
