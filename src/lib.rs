@@ -3,7 +3,13 @@ use std::cmp::Ordering;
 pub type Distance = f32;
 
 pub trait MetricSpace {
-    fn distance(&self, other: &Self) -> Distance;
+    /**
+     * This function must return distance between two items that meets triangle inequality.
+     * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
+     *
+     * @param user_data Whatever you want. Passed from new_with_user_data()
+     */
+    fn distance<UserData>(&self, other: &Self, user_data: &UserData) -> Distance;
 }
 
 struct Node<Item: MetricSpace + Copy> {
@@ -14,8 +20,9 @@ struct Node<Item: MetricSpace + Copy> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
-pub struct Handle<Item: MetricSpace + Copy> {
+pub struct Tree<'a, Item: MetricSpace + Copy, UserData: 'a> {
     root: Node<Item>,
+    user_data: &'a UserData,
 }
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
@@ -26,16 +33,28 @@ struct Tmp {
     idx: usize,
 }
 
-impl<Item: MetricSpace + Copy> Handle<Item> {
+static DUMMY_DATA: () = ();
 
-    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp], items: &[Item]) {
+impl<'a, Item: MetricSpace + Copy> Tree<'static, Item, ()> {
+
+    /**
+     * @sea Tree::new_with_user_data
+     */
+    pub fn new(items: &[Item]) -> Tree<'static, Item, ()> {
+        Self::new_with_user_data(items, &DUMMY_DATA)
+    }
+}
+
+impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
+
+    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp], items: &[Item], user_data: &UserData) {
         for i in indexes.iter_mut() {
-            i.distance = vantage_point.distance(&items[i.idx]);
+            i.distance = vantage_point.distance(&items[i.idx], user_data);
         }
         indexes.sort_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
     }
 
-    fn create_node(indexes: &mut [Tmp], items: &[Item]) -> Option<Node<Item>> {
+    fn create_node(indexes: &mut [Tmp], items: &[Item], user_data: &UserData) -> Option<Node<Item>> {
         if indexes.len() == 0 {
             return None;
         }
@@ -54,7 +73,7 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
         // Removes the `ref_idx` item from remaining items, because it's included in the current node
         let rest = &mut indexes[1..];
 
-        Self::sort_indexes_by_distance(items[ref_idx], rest, items);
+        Self::sort_indexes_by_distance(items[ref_idx], rest, items, user_data);
 
         // Remaining items are split by the median distance
         let half_idx = rest.len()/2;
@@ -65,34 +84,30 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
             vantage_point: items[ref_idx],
             idx: ref_idx,
             radius: far_indexes[0].distance,
-            near: Self::create_node(near_indexes, items).map(|i| Box::new(i)),
-            far: Self::create_node(far_indexes, items).map(|i| Box::new(i)),
+            near: Self::create_node(near_indexes, items, user_data).map(|i| Box::new(i)),
+            far: Self::create_node(far_indexes, items, user_data).map(|i| Box::new(i)),
         })
     }
 
     /**
      * Create a Vantage Point tree for fast nearest neighbor search.
      *
-     * Note that the callback must return distances that meet triangle inequality.
-     * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
-     *
-     * @param  items        Array of pointers to items that will be searched. Must not be freed until the tree is freed!
-     * @param  num_items    Number of items in the array. Must be > 0
-     * @param  get_distance A callback function that will calculdate distance between two items given their pointers.
-     * @return              NULL on error or a handle that must be freed with vp_free().
+     * @param  items        Array of items that will be searched.
+     * @param  user_data    Reference to any object that is passed down to item.distance()
      */
-    pub fn new(items: &[Item]) -> Handle<Item> {
+    pub fn new_with_user_data(items: &[Item], user_data: &'a UserData) -> Tree<'a, Item, UserData> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance:0.0,
         }).collect();
 
-        Handle {
-            root: Self::create_node(&mut indexes[..], items).unwrap(),
+        Tree {
+            root: Self::create_node(&mut indexes[..], items, user_data).unwrap(),
+            user_data: user_data,
         }
     }
 
-    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp) {
-        let distance = needle.distance(&node.vantage_point);
+    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp, user_data: &UserData) {
+        let distance = needle.distance(&node.vantage_point, user_data);
 
         if distance < best_candidate.distance {
             best_candidate.distance = distance;
@@ -102,23 +117,23 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
         // Recurse towards most likely candidate first to narrow best candidate's distance as soon as possible
         if distance < node.radius {
             if let Some(ref near) = node.near {
-                Self::search_node(&*near, needle, best_candidate);
+                Self::search_node(&*near, needle, best_candidate, user_data);
             }
             // The best node (final answer) may be just ouside the radius, but not farther than
             // the best distance we know so far. The search_node above should have narrowed
             // best_candidate.distance, so this path is rarely taken.
             if let Some(ref far) = node.far {
                 if distance >= node.radius - best_candidate.distance {
-                    Self::search_node(&*far, needle, best_candidate);
+                    Self::search_node(&*far, needle, best_candidate, user_data);
                 }
             }
         } else {
             if let Some(ref far) = node.far {
-                Self::search_node(&*far, needle, best_candidate);
+                Self::search_node(&*far, needle, best_candidate, user_data);
             }
             if let Some(ref near) = node.near {
                 if distance <= node.radius + best_candidate.distance {
-                    Self::search_node(&*near, needle, best_candidate);
+                    Self::search_node(&*near, needle, best_candidate, user_data);
                 }
             }
         }
@@ -127,7 +142,6 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
     /**
      * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
      *
-     * @param  handle       VP tree from vp_init(). Must not be NULL.
      * @param  needle       The query.
      * @return              Index of the nearest item found.
      */
@@ -136,7 +150,7 @@ impl<Item: MetricSpace + Copy> Handle<Item> {
             distance: std::f32::MAX,
             idx: 0,
         };
-        Self::search_node(&self.root, needle, &mut best_candidate);
+        Self::search_node(&self.root, needle, &mut best_candidate, self.user_data);
         return best_candidate.idx;
     }
 }
