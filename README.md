@@ -1,36 +1,36 @@
 # VP-tree nearest neighbor search
 
-A relatively simple and readable C (C99) implementation of Vantage Point tree search algorithm.
+A relatively simple and readable Rust implementation of Vantage Point tree search algorithm.
 
 The VP tree algorithm doesn't need to know coordinates of items, only distances between them. It can efficiently search multi-dimensional spaces and abstract things as long as you can define similarity between them (e.g. points, colors, and even images).
 
-Please see `vp.c` for details.
+Please see `lib.rs` for details.
 
-```C
-#include "vp.h"
-#include <math.h>
-#include <stdio.h>
+```Rust
+extern crate vpsearch;
 
-typedef struct point {float x,y;} point;
-
-float get_distance(const void *a, const void *b) {
-    float dx = ((point *)a)->x - ((point *)b)->x;
-    float dy = ((point *)a)->y - ((point *)b)->y;
-
-    return sqrt(dx*dx + dy*dy); // sqrt is required
+#[derive(Copy, Clone)]
+struct Point {
+    x: f32, y: f32,
 }
 
-int main(void) {
+impl vpsearch::MetricSpace for Point {
+    fn distance<UserData>(&self, other: &Self, _: &UserData) -> vpsearch::Distance {
+        let dx = self.x - other.x;
+        let dy = self.y - other.y;
 
-    // The library operates on pointers to elements
-    point *points[] = {&(point){2,3}, &(point){0,1}, &(point){4,5}};
+        (dx*dx + dy*dy).sqrt() // sqrt is required
+    }
+}
 
-    vp_handle *vp = vp_init((void**)points, 3, get_distance);
+fn main() {
 
-    int index = vp_find_nearest(vp, &(point){1,2});
+    let points = vec![Point{x:2.0,y:3.0}, Point{x:0.0,y:1.0}, Point{x:4.0,y:5.0}];
 
-    printf("The nearest point is at (%f,%f)\n", points[index]->x, points[index]->y);
+    let vp = vpsearch::Tree::new(&points);
 
-    vp_free(vp);
+    let (index, _) = vp.find_nearest(&Point{x:1.0,y:2.0});
+
+    println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
 }
 ```
