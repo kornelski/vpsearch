@@ -6,11 +6,12 @@ pub trait MaximumValue {
     fn max() -> Self;
 }
 
-impl MaximumValue for f32 {
-    fn max() -> Self {
-        std::f32::MAX
-    }
-}
+impl MaximumValue for f32 { fn max() -> Self { std::f32::MAX } }
+impl MaximumValue for f64 { fn max() -> Self { std::f64::MAX } }
+impl MaximumValue for u16 { fn max() -> Self { std::u16::MAX } }
+impl MaximumValue for u32 { fn max() -> Self { std::u32::MAX } }
+impl MaximumValue for u64 { fn max() -> Self { std::u64::MAX } }
+impl MaximumValue for usize { fn max() -> Self { std::usize::MAX } }
 
 pub trait MetricSpace {
     type UserData = ();
@@ -184,16 +185,17 @@ impl MetricSpace for Foo {
 
 #[cfg(test)]
 #[derive(Copy, Clone)]
-struct Bar(f32);
+struct Bar(i32);
 
 #[cfg(test)]
 impl MetricSpace for Bar {
     type UserData = usize;
+    type Distance = u32;
 
     fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance {
         assert_eq!(12345, *user_data);
 
-        (self.0 - other.0).abs()
+        (self.0 - other.0).abs() as u32
     }
 }
 
@@ -211,9 +213,9 @@ fn test_without_user_data() {
 
 #[test]
 fn test_with_user_data() {
-    let bars = [Bar(1.0), Bar(1.5), Bar(2.0)];
+    let bars = [Bar(10), Bar(15), Bar(20)];
     let magic = 12345;
     let vp = Tree::new_with_user_data(&bars, &magic);
 
-    assert_eq!((1, 0.0), vp.find_nearest(&Bar(1.5)));
+    assert_eq!((1, 0), vp.find_nearest(&Bar(15)));
 }
