@@ -3,13 +3,15 @@ use std::cmp::Ordering;
 pub type Distance = f32;
 
 pub trait MetricSpace {
+    type UserData;
+
     /**
      * This function must return distance between two items that meets triangle inequality.
      * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
      *
      * @param user_data Whatever you want. Passed from new_with_user_data()
      */
-    fn distance<UserData>(&self, other: &Self, user_data: &UserData) -> Distance;
+    fn distance(&self, other: &Self, user_data: &Self::UserData) -> Distance;
 }
 
 struct Node<Item: MetricSpace + Copy> {
@@ -20,9 +22,9 @@ struct Node<Item: MetricSpace + Copy> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
-pub struct Tree<'a, Item: MetricSpace + Copy, UserData: 'a> {
+pub struct Tree<'a, Item: MetricSpace + Copy> where <Item as MetricSpace>::UserData: 'a {
     root: Node<Item>,
-    user_data: &'a UserData,
+    user_data: &'a <Item as MetricSpace>::UserData,
 }
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
@@ -35,26 +37,26 @@ struct Tmp {
 
 static DUMMY_DATA: () = ();
 
-impl<'a, Item: MetricSpace + Copy> Tree<'static, Item, ()> {
+impl<Item: MetricSpace<UserData = ()> + Copy> Tree<'static, Item> where <Item as MetricSpace>::UserData: 'static {
 
     /**
      * @sea Tree::new_with_user_data
      */
-    pub fn new(items: &[Item]) -> Tree<'static, Item, ()> {
+    pub fn new(items: &[Item]) -> Tree<'static, Item> {
         Self::new_with_user_data(items, &DUMMY_DATA)
     }
 }
 
-impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
+impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
 
-    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp], items: &[Item], user_data: &UserData) {
+    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp], items: &[Item], user_data: &<Item as MetricSpace>::UserData) {
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx], user_data);
         }
         indexes.sort_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
     }
 
-    fn create_node(indexes: &mut [Tmp], items: &[Item], user_data: &UserData) -> Option<Node<Item>> {
+    fn create_node(indexes: &mut [Tmp], items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Option<Node<Item>> {
         if indexes.len() == 0 {
             return None;
         }
@@ -95,7 +97,7 @@ impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
      * @param  items        Array of items that will be searched.
      * @param  user_data    Reference to any object that is passed down to item.distance()
      */
-    pub fn new_with_user_data(items: &[Item], user_data: &'a UserData) -> Tree<'a, Item, UserData> {
+    pub fn new_with_user_data(items: &[Item], user_data: &'a <Item as MetricSpace>::UserData) -> Tree<'a, Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance:0.0,
         }).collect();
@@ -106,7 +108,7 @@ impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
         }
     }
 
-    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp, user_data: &UserData) {
+    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp, user_data: &<Item as MetricSpace>::UserData) {
         let distance = needle.distance(&node.vantage_point, user_data);
 
         if distance < best_candidate.distance {
@@ -145,7 +147,7 @@ impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
      * @param  needle       The query.
      * @return              Index of the nearest item found and the distance from the nearest item
      */
-    pub fn find_nearest(&self, needle: &Item) -> (usize, Distance) {
+    pub fn find_nearest(&'a self, needle: &Item) -> (usize, Distance) {
         let mut best_candidate = Tmp{
             distance: std::f32::MAX,
             idx: 0,
@@ -164,13 +166,29 @@ struct Foo(f32);
 
 #[cfg(test)]
 impl MetricSpace for Foo {
-    fn distance<UserData>(&self, other: &Self, _: &UserData) -> Distance {
-        return (self.0 - other.0).abs();
+    type UserData = ();
+    fn distance(&self, other: &Self, _: &Self::UserData) -> Distance {
+        (self.0 - other.0).abs()
+    }
+}
+
+#[cfg(test)]
+#[derive(Copy, Clone)]
+struct Bar(f32);
+
+#[cfg(test)]
+impl MetricSpace for Bar {
+    type UserData = usize;
+
+    fn distance(&self, other: &Self, user_data: &Self::UserData) -> Distance {
+        assert_eq!(12345, *user_data);
+
+        (self.0 - other.0).abs()
     }
 }
 
 #[test]
-fn test() {
+fn test_without_user_data() {
     let foos = [Foo(1.0), Foo(1.5), Foo(2.0)];
     let vp = Tree::new(&foos);
 
@@ -179,4 +197,13 @@ fn test() {
     assert_eq!((1, 0.0), vp.find_nearest(&Foo(1.5)));
     assert_eq!((1, 0.125), vp.find_nearest(&Foo(1.5-0.125)));
     assert_eq!((2, 0.125), vp.find_nearest(&Foo(2.0-0.125)));
+}
+
+#[test]
+fn test_with_user_data() {
+    let bars = [Bar(1.0), Bar(1.5), Bar(2.0)];
+    let magic = 12345;
+    let vp = Tree::new_with_user_data(&bars, &magic);
+
+    assert_eq!((1, 0.0), vp.find_nearest(&Bar(1.5)));
 }

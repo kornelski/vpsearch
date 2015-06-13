@@ -6,7 +6,9 @@ struct Point {
 }
 
 impl vpsearch::MetricSpace for Point {
-    fn distance<UserData>(&self, other: &Self, _: &UserData) -> vpsearch::Distance {
+    type UserData = ();
+
+    fn distance(&self, other: &Self, _: &Self::UserData) -> vpsearch::Distance {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
 
