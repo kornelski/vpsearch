@@ -155,3 +155,28 @@ impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
         (best_candidate.idx, best_candidate.distance)
     }
 }
+
+// Test
+
+#[cfg(test)]
+#[derive(Copy, Clone)]
+struct Foo(f32);
+
+#[cfg(test)]
+impl MetricSpace for Foo {
+    fn distance<UserData>(&self, other: &Self, _: &UserData) -> Distance {
+        return (self.0 - other.0).abs();
+    }
+}
+
+#[test]
+fn test() {
+    let foos = [Foo(1.0), Foo(1.5), Foo(2.0)];
+    let vp = Tree::new(&foos);
+
+    assert_eq!((2, 98.0), vp.find_nearest(&Foo(100.0)));
+    assert_eq!((0, 101.0), vp.find_nearest(&Foo(-100.0)));
+    assert_eq!((1, 0.0), vp.find_nearest(&Foo(1.5)));
+    assert_eq!((1, 0.125), vp.find_nearest(&Foo(1.5-0.125)));
+    assert_eq!((2, 0.125), vp.find_nearest(&Foo(2.0-0.125)));
+}
