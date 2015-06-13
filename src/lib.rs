@@ -151,6 +151,7 @@ impl<'a, Item: MetricSpace + Copy, UserData> Tree<'a, Item, UserData> {
             idx: 0,
         };
         Self::search_node(&self.root, needle, &mut best_candidate, self.user_data);
-        return best_candidate.idx;
+
+        best_candidate.idx
     }
 }

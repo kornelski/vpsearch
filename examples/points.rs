@@ -10,7 +10,7 @@ impl vpsearch::MetricSpace for Point {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
 
-        return (dx*dx + dy*dy).sqrt(); // sqrt is required
+        (dx*dx + dy*dy).sqrt() // sqrt is required
     }
 }
 
