@@ -7,7 +7,7 @@ use num::Bounded;
 
 pub trait MetricSpace {
     type UserData = ();
-    type Distance: Copy + PartialOrd + Bounded + Add<Output=<Self as MetricSpace>::Distance> + Sub<Output=<Self as MetricSpace>::Distance> = f32;
+    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance> + Sub<Output=Self::Distance> = f32;
 
     /**
      * This function must return distance between two items that meets triangle inequality.
