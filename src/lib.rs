@@ -1,21 +1,13 @@
+extern crate num;
+
 use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::Sub;
-
-pub trait MaximumValue {
-    fn max() -> Self;
-}
-
-impl MaximumValue for f32 { fn max() -> Self { std::f32::MAX } }
-impl MaximumValue for f64 { fn max() -> Self { std::f64::MAX } }
-impl MaximumValue for u16 { fn max() -> Self { std::u16::MAX } }
-impl MaximumValue for u32 { fn max() -> Self { std::u32::MAX } }
-impl MaximumValue for u64 { fn max() -> Self { std::u64::MAX } }
-impl MaximumValue for usize { fn max() -> Self { std::usize::MAX } }
+use num::Bounded;
 
 pub trait MetricSpace {
     type UserData = ();
-    type Distance: Copy + PartialOrd + MaximumValue + Add<Output=<Self as MetricSpace>::Distance> + Sub<Output=<Self as MetricSpace>::Distance> = f32;
+    type Distance: Copy + PartialOrd + Bounded + Add<Output=<Self as MetricSpace>::Distance> + Sub<Output=<Self as MetricSpace>::Distance> = f32;
 
     /**
      * This function must return distance between two items that meets triangle inequality.
@@ -77,7 +69,7 @@ impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
                 near: None, far: None,
                 vantage_point: items[indexes[0].idx],
                 idx: indexes[0].idx,
-                radius: <<Item as MetricSpace>::Distance as MaximumValue>::max(),
+                radius: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
             });
         }
 
@@ -110,7 +102,7 @@ impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
      */
     pub fn new_with_user_data(items: &[Item], user_data: &'a <Item as MetricSpace>::UserData) -> Tree<'a, Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
-            idx:i, distance: <<Item as MetricSpace>::Distance as MaximumValue>::max(),
+            idx:i, distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
         }).collect();
 
         Tree {
@@ -160,7 +152,7 @@ impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
      */
     pub fn find_nearest(&'a self, needle: &Item) -> (usize, <Item as MetricSpace>::Distance) {
         let mut best_candidate = Tmp{
-            distance: <<Item as MetricSpace>::Distance as MaximumValue>::max(),
+            distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
             idx: 0,
         };
         Self::search_node(&self.root, needle, &mut best_candidate, self.user_data);

@@ -7,3 +7,6 @@ homepage = "https://github.com/pornel/vpsearch"
 repository = "https://github.com/pornel/vpsearch.git"
 keywords = ["similarity", "search","knn","distance"]
 license = "BSD-2-Clause"
+
+[dependencies]
+num = "*"
