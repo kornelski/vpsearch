@@ -26,9 +26,9 @@ struct Node<Item: MetricSpace + Copy> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
-pub struct Tree<'a, Item: MetricSpace + Copy> where <Item as MetricSpace>::UserData: 'a {
+pub struct Tree<Item: MetricSpace + Copy> {
     root: Node<Item>,
-    user_data: &'a <Item as MetricSpace>::UserData,
+    user_data: Option<<Item as MetricSpace>::UserData>,
 }
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
@@ -39,19 +39,17 @@ struct Tmp<Item: MetricSpace> {
     idx: usize,
 }
 
-static DUMMY_DATA: () = ();
-
-impl<Item: MetricSpace<UserData = ()> + Copy> Tree<'static, Item> where <Item as MetricSpace>::UserData: 'static {
+impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item> {
 
     /**
-     * @sea Tree::new_with_user_data
+     * @sea Tree::new_with_user_data_owned
      */
-    pub fn new(items: &[Item]) -> Tree<'static, Item> {
-        Self::new_with_user_data(items, &DUMMY_DATA)
+    pub fn new(items: &[Item]) -> Tree<Item> {
+        Self::new_with_user_data_owned(items, ())
     }
 }
 
-impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
+impl<Item: MetricSpace + Copy> Tree<Item> {
     fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item>], items: &[Item], user_data: &<Item as MetricSpace>::UserData) {
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx], user_data);
@@ -100,15 +98,26 @@ impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
      * @param  items        Array of items that will be searched.
      * @param  user_data    Reference to any object that is passed down to item.distance()
      */
-    pub fn new_with_user_data(items: &[Item], user_data: &'a <Item as MetricSpace>::UserData) -> Tree<'a, Item> {
+    pub fn new_with_user_data_owned(items: &[Item], user_data: <Item as MetricSpace>::UserData) -> Tree<Item> {
+        Tree {
+            root: Self::create_root_node(items, &user_data),
+            user_data: Some(user_data),
+        }
+    }
+
+    pub fn new_with_user_data_ref(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Tree<Item> {
+        Tree {
+            root: Self::create_root_node(items, &user_data),
+            user_data: None,
+        }
+    }
+
+    fn create_root_node(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Node<Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
         }).collect();
 
-        Tree {
-            root: Self::create_node(&mut indexes[..], items, user_data).unwrap(),
-            user_data: user_data,
-        }
+        Self::create_node(&mut indexes[..], items, user_data).unwrap()
     }
 
     fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp<Item>, user_data: &<Item as MetricSpace>::UserData) {
@@ -150,12 +159,16 @@ impl<'a, Item: MetricSpace + Copy> Tree<'a, Item> {
      * @param  needle       The query.
      * @return              Index of the nearest item found and the distance from the nearest item
      */
-    pub fn find_nearest(&'a self, needle: &Item) -> (usize, <Item as MetricSpace>::Distance) {
+    pub fn find_nearest(&self, needle: &Item) -> (usize, <Item as MetricSpace>::Distance) {
+        self.find_nearest_with_user_data(needle, self.user_data.as_ref().expect("Use find_nearest_with_user_data"))
+    }
+
+    pub fn find_nearest_with_user_data(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
         let mut best_candidate = Tmp{
             distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
             idx: 0,
         };
-        Self::search_node(&self.root, needle, &mut best_candidate, self.user_data);
+        Self::search_node(&self.root, needle, &mut best_candidate, user_data);
 
         (best_candidate.idx, best_candidate.distance)
     }
@@ -207,7 +220,11 @@ fn test_without_user_data() {
 fn test_with_user_data() {
     let bars = [Bar(10), Bar(15), Bar(20)];
     let magic = 12345;
-    let vp = Tree::new_with_user_data(&bars, &magic);
+    let vp = Tree::new_with_user_data_owned(&bars, magic);
 
     assert_eq!((1, 0), vp.find_nearest(&Bar(15)));
+    assert_eq!((1, 1), vp.find_nearest_with_user_data(&Bar(16), &magic));
+
+    let vp = Tree::new_with_user_data_ref(&bars, &magic);
+    assert_eq!((0, 1), vp.find_nearest_with_user_data(&Bar(9), &magic));
 }
