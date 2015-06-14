@@ -5,6 +5,9 @@ use std::ops::Add;
 use std::ops::Sub;
 use num::Bounded;
 
+pub struct UserDataByRef;
+pub struct UserDataOwned;
+
 pub trait MetricSpace {
     type UserData = ();
     type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance> + Sub<Output=Self::Distance> = f32;
@@ -26,9 +29,10 @@ struct Node<Item: MetricSpace + Copy> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
-pub struct Tree<Item: MetricSpace + Copy> {
+pub struct Tree<Item: MetricSpace + Copy, Ownership> {
     root: Node<Item>,
     user_data: Option<<Item as MetricSpace>::UserData>,
+    _ownership: Ownership,
 }
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
@@ -39,17 +43,27 @@ struct Tmp<Item: MetricSpace> {
     idx: usize,
 }
 
-impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item> {
+impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item, UserDataOwned> {
 
     /**
      * @sea Tree::new_with_user_data_owned
      */
-    pub fn new(items: &[Item]) -> Tree<Item> {
+    pub fn new(items: &[Item]) -> Tree<Item, UserDataOwned> {
         Self::new_with_user_data_owned(items, ())
+    }
+
+    /**
+     * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
+     *
+     * @param  needle       The query.
+     * @return              Index of the nearest item found and the distance from the nearest item
+     */
+    pub fn find_nearest(&self, needle: &Item) -> (usize, <Item as MetricSpace>::Distance) {
+        self.find_nearest_with_user_data(needle, &self.user_data.as_ref().unwrap())
     }
 }
 
-impl<Item: MetricSpace + Copy> Tree<Item> {
+impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
     fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item>], items: &[Item], user_data: &<Item as MetricSpace>::UserData) {
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx], user_data);
@@ -91,27 +105,39 @@ impl<Item: MetricSpace + Copy> Tree<Item> {
             far: Self::create_node(far_indexes, items, user_data).map(|i| Box::new(i)),
         })
     }
+}
 
+impl<Item: MetricSpace + Copy> Tree<Item, UserDataOwned> {
     /**
      * Create a Vantage Point tree for fast nearest neighbor search.
      *
      * @param  items        Array of items that will be searched.
      * @param  user_data    Reference to any object that is passed down to item.distance()
      */
-    pub fn new_with_user_data_owned(items: &[Item], user_data: <Item as MetricSpace>::UserData) -> Tree<Item> {
+    pub fn new_with_user_data_owned(items: &[Item], user_data: <Item as MetricSpace>::UserData) -> Tree<Item, UserDataOwned> {
         Tree {
             root: Self::create_root_node(items, &user_data),
             user_data: Some(user_data),
+            _ownership: UserDataOwned,
         }
     }
+}
 
-    pub fn new_with_user_data_ref(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Tree<Item> {
+impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
+    pub fn new_with_user_data_ref(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Tree<Item, UserDataByRef> {
         Tree {
             root: Self::create_root_node(items, &user_data),
             user_data: None,
+            _ownership: UserDataByRef,
         }
     }
 
+    pub fn find_nearest(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
+        self.find_nearest_with_user_data(needle, user_data)
+    }
+}
+
+impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
     fn create_root_node(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Node<Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
@@ -153,17 +179,7 @@ impl<Item: MetricSpace + Copy> Tree<Item> {
         }
     }
 
-    /**
-     * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
-     *
-     * @param  needle       The query.
-     * @return              Index of the nearest item found and the distance from the nearest item
-     */
-    pub fn find_nearest(&self, needle: &Item) -> (usize, <Item as MetricSpace>::Distance) {
-        self.find_nearest_with_user_data(needle, self.user_data.as_ref().expect("Use find_nearest_with_user_data"))
-    }
-
-    pub fn find_nearest_with_user_data(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
+    fn find_nearest_with_user_data(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
         let mut best_candidate = Tmp{
             distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
             idx: 0,
@@ -226,5 +242,6 @@ fn test_with_user_data() {
     assert_eq!((1, 1), vp.find_nearest_with_user_data(&Bar(16), &magic));
 
     let vp = Tree::new_with_user_data_ref(&bars, &magic);
+    assert_eq!((0, 1), vp.find_nearest(&Bar(9), &magic));
     assert_eq!((0, 1), vp.find_nearest_with_user_data(&Bar(9), &magic));
 }
