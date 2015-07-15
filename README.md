@@ -1,10 +1,14 @@
 # VP-tree nearest neighbor search
 
-A relatively simple and readable C (C99) implementation of Vantage Point tree search algorithm.
+A relatively simple and readable C (C99) and [Rust][1] implementations of the Vantage Point tree search algorithm.
+
+[1] https://github.com/pornel/vpsearch/tree/rust
 
 The VP tree algorithm doesn't need to know coordinates of items, only distances between them. It can efficiently search multi-dimensional spaces and abstract things as long as you can define similarity between them (e.g. points, colors, and even images).
 
 Please see `vp.c` for details.
+
+The Rust version is faster and is recommended even for C programs.
 
 ```C
 #include "vp.h"
