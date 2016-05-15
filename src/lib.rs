@@ -139,6 +139,27 @@ impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
     }
 }
 
+use std::fmt::{Debug,Formatter,Error};
+impl<Item: Debug + Copy + MetricSpace, Ownership> Debug for Tree<Item, Ownership> {
+    fn fmt(&self, f:&mut Formatter) -> Result<(),Error> {
+        write!(f, "digraph \"vp tree.dot\" {{\n{:?}}}", self.root)
+    }
+}
+
+impl<Item: Debug + Copy + MetricSpace> Debug for Node<Item> {
+    fn fmt(&self, f:&mut Formatter) -> Result<(),Error> {
+        if self.near.is_some() {
+            try!(write!(f, "\"{:?}\" -> \"{:?}\"\n", self.vantage_point, self.near.as_ref().unwrap().vantage_point));
+            try!(self.near.as_ref().unwrap().fmt(f));
+        }
+        if self.far.is_some() {
+            try!(write!(f, "\"{:?}\" -> \"{:?}\"\n", self.vantage_point, self.far.as_ref().unwrap().vantage_point));
+            try!(self.far.as_ref().unwrap().fmt(f));
+        }
+        return Ok(());
+    }
+}
+
 impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
     fn create_root_node(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Node<Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
