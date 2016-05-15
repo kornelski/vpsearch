@@ -21,6 +21,28 @@ pub trait MetricSpace {
     fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance;
 }
 
+pub trait BestCandidate<T> {
+    fn new() -> Self;
+    fn consider(&mut self, distance: T, candidate_index: usize);
+}
+
+impl<Item: MetricSpace> BestCandidate<<Item as MetricSpace>::Distance> for Tmp<Item>  {
+    fn new() -> Self {
+        Tmp {
+            distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
+            idx: 0,
+        }
+    }
+
+    #[inline]
+    fn consider(&mut self, distance: <Item as MetricSpace>::Distance, candidate_index: usize) {
+        if distance < self.distance {
+            self.distance = distance;
+            self.idx = candidate_index;
+        }
+    }
+}
+
 struct Node<Item: MetricSpace + Copy> {
     near: Option<Box<Node<Item>>>,
     far: Option<Box<Node<Item>>>,
@@ -172,10 +194,7 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
     fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp<Item>, user_data: &<Item as MetricSpace>::UserData) {
         let distance = needle.distance(&node.vantage_point, user_data);
 
-        if distance < best_candidate.distance {
-            best_candidate.distance = distance;
-            best_candidate.idx = node.idx;
-        }
+        best_candidate.consider(distance, node.idx);
 
         // Recurse towards most likely candidate first to narrow best candidate's distance as soon as possible
         if distance < node.radius {
@@ -203,10 +222,7 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
     }
 
     fn find_nearest_with_user_data(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
-        let mut best_candidate = Tmp{
-            distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
-            idx: 0,
-        };
+        let mut best_candidate = Tmp::new();
         Self::search_node(&self.root, needle, &mut best_candidate, user_data);
 
         (best_candidate.idx, best_candidate.distance)
