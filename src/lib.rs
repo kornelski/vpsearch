@@ -29,13 +29,13 @@ pub trait BestCandidate<T> {
 impl<Item: MetricSpace> BestCandidate<<Item as MetricSpace>::Distance> for Tmp<Item>  {
     fn new() -> Self {
         Tmp {
-            distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
+            distance: <Item::Distance as Bounded>::max_value(),
             idx: 0,
         }
     }
 
     #[inline]
-    fn consider(&mut self, distance: <Item as MetricSpace>::Distance, candidate_index: usize) {
+    fn consider(&mut self, distance: Item::Distance, candidate_index: usize) {
         if distance < self.distance {
             self.distance = distance;
             self.idx = candidate_index;
@@ -47,13 +47,13 @@ struct Node<Item: MetricSpace + Copy> {
     near: Option<Box<Node<Item>>>,
     far: Option<Box<Node<Item>>>,
     vantage_point: Item, // Pointer to the item (value) represented by the current node
-    radius: <Item as MetricSpace>::Distance,    // How far the `near` node stretches
+    radius: Item::Distance,    // How far the `near` node stretches
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
 pub struct Tree<Item: MetricSpace + Copy, Ownership> {
     root: Node<Item>,
-    user_data: Option<<Item as MetricSpace>::UserData>,
+    user_data: Option<Item::UserData>,
     _ownership: Ownership,
 }
 
@@ -61,7 +61,7 @@ pub struct Tree<Item: MetricSpace + Copy, Ownership> {
    (also used during search to hold the two properties).
 */
 struct Tmp<Item: MetricSpace> {
-    distance: <Item as MetricSpace>::Distance,
+    distance: Item::Distance,
     idx: usize,
 }
 
@@ -82,20 +82,20 @@ impl<T, Item: MetricSpace<UserData = T> + Copy> Tree<Item, UserDataOwned> {
      * @param  needle       The query.
      * @return              Index of the nearest item found and the distance from the nearest item
      */
-    pub fn find_nearest(&self, needle: &Item) -> (usize, <Item as MetricSpace>::Distance) {
+    pub fn find_nearest(&self, needle: &Item) -> (usize, Item::Distance) {
         self.find_nearest_with_user_data(needle, &self.user_data.as_ref().unwrap())
     }
 }
 
 impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
-    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item>], items: &[Item], user_data: &<Item as MetricSpace>::UserData) {
+    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item>], items: &[Item], user_data: &Item::UserData) {
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx], user_data);
         }
         indexes.sort_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
     }
 
-    fn create_node(indexes: &mut [Tmp<Item>], items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Option<Node<Item>> {
+    fn create_node(indexes: &mut [Tmp<Item>], items: &[Item], user_data: &Item::UserData) -> Option<Node<Item>> {
         if indexes.len() == 0 {
             return None;
         }
@@ -105,7 +105,7 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
                 near: None, far: None,
                 vantage_point: items[indexes[0].idx],
                 idx: indexes[0].idx,
-                radius: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
+                radius: <Item::Distance as Bounded>::max_value(),
             });
         }
 
@@ -138,7 +138,7 @@ impl<Item: MetricSpace + Copy> Tree<Item, UserDataOwned> {
      * @param  items        Array of items that will be searched.
      * @param  user_data    Reference to any object that is passed down to item.distance()
      */
-    pub fn new_with_user_data_owned(items: &[Item], user_data: <Item as MetricSpace>::UserData) -> Tree<Item, UserDataOwned> {
+    pub fn new_with_user_data_owned(items: &[Item], user_data: Item::UserData) -> Tree<Item, UserDataOwned> {
         Tree {
             root: Self::create_root_node(items, &user_data),
             user_data: Some(user_data),
@@ -148,7 +148,7 @@ impl<Item: MetricSpace + Copy> Tree<Item, UserDataOwned> {
 }
 
 impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
-    pub fn new_with_user_data_ref(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Tree<Item, UserDataByRef> {
+    pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Tree<Item, UserDataByRef> {
         Tree {
             root: Self::create_root_node(items, &user_data),
             user_data: None,
@@ -156,7 +156,7 @@ impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
         }
     }
 
-    pub fn find_nearest(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
+    pub fn find_nearest(&self, needle: &Item, user_data: &Item::UserData) -> (usize, Item::Distance) {
         self.find_nearest_with_user_data(needle, user_data)
     }
 }
@@ -183,15 +183,15 @@ impl<Item: Debug + Copy + MetricSpace> Debug for Node<Item> {
 }
 
 impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
-    fn create_root_node(items: &[Item], user_data: &<Item as MetricSpace>::UserData) -> Node<Item> {
+    fn create_root_node(items: &[Item], user_data: &Item::UserData) -> Node<Item> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
-            idx:i, distance: <<Item as MetricSpace>::Distance as Bounded>::max_value(),
+            idx:i, distance: <Item::Distance as Bounded>::max_value(),
         }).collect();
 
         Self::create_node(&mut indexes[..], items, user_data).unwrap()
     }
 
-    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp<Item>, user_data: &<Item as MetricSpace>::UserData) {
+    fn search_node(node: &Node<Item>, needle: &Item, best_candidate: &mut Tmp<Item>, user_data: &Item::UserData) {
         let distance = needle.distance(&node.vantage_point, user_data);
 
         best_candidate.consider(distance, node.idx);
@@ -221,7 +221,7 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
         }
     }
 
-    fn find_nearest_with_user_data(&self, needle: &Item, user_data: &<Item as MetricSpace>::UserData) -> (usize, <Item as MetricSpace>::Distance) {
+    fn find_nearest_with_user_data(&self, needle: &Item, user_data: &Item::UserData) -> (usize, Item::Distance) {
         let mut best_candidate = Tmp::new();
         Self::search_node(&self.root, needle, &mut best_candidate, user_data);
 
