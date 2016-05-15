@@ -1,16 +1,16 @@
-extern crate num;
+extern crate num_traits;
 
 use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::Sub;
-use num::Bounded;
+use num_traits::Bounded;
 
 pub struct UserDataByRef;
 pub struct UserDataOwned;
 
 pub trait MetricSpace {
-    type UserData = ();
-    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance> + Sub<Output=Self::Distance> = f32;
+    type UserData;
+    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance> + Sub<Output=Self::Distance>;
 
     /**
      * This function must return distance between two items that meets triangle inequality.
@@ -46,12 +46,14 @@ struct Tmp<Item: MetricSpace> {
 impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item, UserDataOwned> {
 
     /**
-     * @sea Tree::new_with_user_data_owned
+     * @see Tree::new_with_user_data_owned
      */
     pub fn new(items: &[Item]) -> Tree<Item, UserDataOwned> {
         Self::new_with_user_data_owned(items, ())
     }
+}
 
+impl<T, Item: MetricSpace<UserData = T> + Copy> Tree<Item, UserDataOwned> {
     /**
      * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
      *
@@ -198,6 +200,7 @@ struct Foo(f32);
 
 #[cfg(test)]
 impl MetricSpace for Foo {
+    type Distance = f32;
     type UserData = ();
     fn distance(&self, other: &Self, _: &Self::UserData) -> Self::Distance {
         (self.0 - other.0).abs()
