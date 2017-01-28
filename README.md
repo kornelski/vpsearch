@@ -4,7 +4,7 @@ A relatively simple and readable Rust implementation of Vantage Point tree searc
 
 The VP tree algorithm doesn't need to know coordinates of items, only distances between them. It can efficiently search multi-dimensional spaces and abstract things as long as you can define similarity between them (e.g. points, colors, and even images).
 
-Please see `lib.rs` for details.
+Please see `lib.rs` for details. [API reference](https://docs.rs/vpsearch/).
 
 ```Rust
 extern crate vpsearch;
