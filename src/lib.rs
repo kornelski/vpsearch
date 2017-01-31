@@ -1,3 +1,36 @@
+//! A relatively simple and readable Rust implementation of Vantage Point tree search algorithm.
+//!
+//! The VP tree algorithm doesn't need to know coordinates of items, only distances between them. It can efficiently search multi-dimensional spaces and abstract things as long as you can define similarity between them (e.g. points, colors, and even images).
+//!
+//! [Project page](https://github.com/pornel/vpsearch).
+//!
+//! ```rust
+//! extern crate vpsearch;
+//!
+//! #[derive(Copy, Clone)]
+//! struct Point {
+//!     x: f32, y: f32,
+//! }
+//!
+//! impl vpsearch::MetricSpace for Point {
+//!     type UserData = ();
+//!     type Distance = f32;
+//!
+//!     fn distance(&self, other: &Self, _: &Self::UserData) -> Self::Distance {
+//!         let dx = self.x - other.x;
+//!         let dy = self.y - other.y;
+//!         (dx*dx + dy*dy).sqrt() // sqrt is required
+//!     }
+//! }
+//!
+//! fn main() {
+//!     let points = vec![Point{x:2.0,y:3.0}, Point{x:0.0,y:1.0}, Point{x:4.0,y:5.0}];
+//!     let vp = vpsearch::Tree::new(&points);
+//!     let (index, _) = vp.find_nearest(&Point{x:1.0,y:2.0});
+//!     println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
+//! }
+//! ```
+
 extern crate num_traits;
 
 use std::cmp::Ordering;
@@ -5,10 +38,14 @@ use std::ops::Add;
 use std::ops::Sub;
 use num_traits::Bounded;
 
+#[doc(hidden)]
 pub struct UserDataByRef;
+#[doc(hidden)]
 pub struct UserDataOwned;
 
+/// Elements you're searching for must be comparable using this trait
 pub trait MetricSpace {
+    /// This is used as a context for comparisons. Use `()` if the elements already contain all the data you need.
     type UserData;
     type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance> + Sub<Output=Self::Distance>;
 
@@ -16,7 +53,7 @@ pub trait MetricSpace {
      * This function must return distance between two items that meets triangle inequality.
      * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
      *
-     * @param user_data Whatever you want. Passed from new_with_user_data()
+     * @param user_data Whatever you want. Passed from `new_with_user_data_*()`
      */
     fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance;
 }
@@ -51,6 +88,7 @@ struct Node<Item: MetricSpace + Copy> {
     idx: usize,             // Index of the `vantage_point` in the original items array
 }
 
+/// The VP-Tree
 pub struct Tree<Item: MetricSpace + Copy, Ownership> {
     root: Node<Item>,
     user_data: Option<Item::UserData>,
@@ -68,6 +106,8 @@ struct Tmp<Item: MetricSpace> {
 impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item, UserDataOwned> {
 
     /**
+     * Creates a new tree from items.
+     *
      * @see Tree::new_with_user_data_owned
      */
     pub fn new(items: &[Item]) -> Tree<Item, UserDataOwned> {
@@ -77,7 +117,7 @@ impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item, UserDataOwned> {
 
 impl<T, Item: MetricSpace<UserData = T> + Copy> Tree<Item, UserDataOwned> {
     /**
-     * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from vp_init.
+     * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from `new()`.
      *
      * @param  needle       The query.
      * @return              Index of the nearest item found and the distance from the nearest item
