@@ -43,8 +43,6 @@ mod test;
 mod debug;
 
 #[doc(hidden)]
-pub struct UserDataByRef;
-#[doc(hidden)]
 pub struct Owned<T>(T);
 
 /// Elements you're searching for must be comparable using this trait
@@ -241,12 +239,12 @@ impl<Item: MetricSpace + Copy> Tree<Item, Owned<Item::UserData>> {
     }
 }
 
-impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
+impl<Item: MetricSpace + Copy> Tree<Item, ()> {
     /// The tree doesn't have to own the UserData. You can keep passing it to find_nearest().
     pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Self {
         Tree {
             root: Self::create_root_node(items, &user_data),
-            user_data: UserDataByRef,
+            user_data: (),
         }
     }
 
