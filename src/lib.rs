@@ -40,7 +40,7 @@ use num_traits::Bounded;
 #[doc(hidden)]
 pub struct UserDataByRef;
 #[doc(hidden)]
-pub struct UserDataOwned;
+pub struct Owned<T>(T);
 
 /// Elements you're searching for must be comparable using this trait
 pub trait MetricSpace {
@@ -92,8 +92,7 @@ struct Node<Item: MetricSpace + Copy> {
 /// The VP-Tree
 pub struct Tree<Item: MetricSpace + Copy, Ownership> {
     root: Node<Item>,
-    user_data: Option<Item::UserData>,
-    _ownership: Ownership,
+    user_data: Ownership,
 }
 
 /* Temporary object used to reorder/track distance between items without modifying the orignial items array
@@ -104,19 +103,19 @@ struct Tmp<Item: MetricSpace> {
     idx: usize,
 }
 
-impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item, UserDataOwned> {
+impl<Item: MetricSpace<UserData = ()> + Copy> Tree<Item, Owned<()>> {
 
     /**
      * Creates a new tree from items.
      *
      * @see Tree::new_with_user_data_owned
      */
-    pub fn new(items: &[Item]) -> Tree<Item, UserDataOwned> {
+    pub fn new(items: &[Item]) -> Self {
         Self::new_with_user_data_owned(items, ())
     }
 }
 
-impl<T, Item: MetricSpace<UserData = T> + Copy> Tree<Item, UserDataOwned> {
+impl<U, Item: MetricSpace<UserData = U> + Copy> Tree<Item, Owned<U>> {
     /**
      * Finds item closest to given needle (that can be any item) and returns *index* of the item in items array from `new()`.
      *
@@ -125,7 +124,7 @@ impl<T, Item: MetricSpace<UserData = T> + Copy> Tree<Item, UserDataOwned> {
      */
     #[inline]
     pub fn find_nearest(&self, needle: &Item) -> (usize, Item::Distance) {
-        self.find_nearest_with_user_data(needle, &self.user_data.as_ref().unwrap())
+        self.find_nearest_with_user_data(needle, &self.user_data.0)
     }
 }
 
@@ -173,28 +172,26 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
     }
 }
 
-impl<Item: MetricSpace + Copy> Tree<Item, UserDataOwned> {
+impl<Item: MetricSpace + Copy> Tree<Item, Owned<Item::UserData>> {
     /**
      * Create a Vantage Point tree for fast nearest neighbor search.
      *
      * @param  items        Array of items that will be searched.
      * @param  user_data    Reference to any object that is passed down to item.distance()
      */
-    pub fn new_with_user_data_owned(items: &[Item], user_data: Item::UserData) -> Tree<Item, UserDataOwned> {
+    pub fn new_with_user_data_owned(items: &[Item], user_data: Item::UserData) -> Self {
         Tree {
             root: Self::create_root_node(items, &user_data),
-            user_data: Some(user_data),
-            _ownership: UserDataOwned,
+            user_data: Owned(user_data),
         }
     }
 }
 
 impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
-    pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Tree<Item, UserDataByRef> {
+    pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Self {
         Tree {
             root: Self::create_root_node(items, &user_data),
-            user_data: None,
-            _ownership: UserDataByRef,
+            user_data: UserDataByRef,
         }
     }
 
