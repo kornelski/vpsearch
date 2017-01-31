@@ -123,6 +123,7 @@ impl<T, Item: MetricSpace<UserData = T> + Copy> Tree<Item, UserDataOwned> {
      * @param  needle       The query.
      * @return              Index of the nearest item found and the distance from the nearest item
      */
+    #[inline]
     pub fn find_nearest(&self, needle: &Item) -> (usize, Item::Distance) {
         self.find_nearest_with_user_data(needle, &self.user_data.as_ref().unwrap())
     }
@@ -197,6 +198,7 @@ impl<Item: MetricSpace + Copy> Tree<Item, UserDataByRef> {
         }
     }
 
+    #[inline]
     pub fn find_nearest(&self, needle: &Item, user_data: &Item::UserData) -> (usize, Item::Distance) {
         self.find_nearest_with_user_data(needle, user_data)
     }
@@ -262,6 +264,7 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
         }
     }
 
+    #[inline]
     fn find_nearest_with_user_data(&self, needle: &Item, user_data: &Item::UserData) -> (usize, Item::Distance) {
         let mut best_candidate = Tmp::new();
         Self::search_node(&self.root, needle, &mut best_candidate, user_data);
