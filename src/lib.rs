@@ -35,7 +35,6 @@ extern crate num_traits;
 
 use std::cmp::Ordering;
 use std::ops::Add;
-use std::ops::Sub;
 use num_traits::Bounded;
 
 #[doc(hidden)]
@@ -47,7 +46,9 @@ pub struct UserDataOwned;
 pub trait MetricSpace {
     /// This is used as a context for comparisons. Use `()` if the elements already contain all the data you need.
     type UserData;
-    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance> + Sub<Output=Self::Distance>;
+
+    /// This is a fancy way of saying it should be `f32` or `u32`
+    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance>;
 
     /**
      * This function must return distance between two items that meets triangle inequality.
@@ -245,7 +246,7 @@ impl<Item: MetricSpace + Copy, Ownership> Tree<Item, Ownership> {
             // the best distance we know so far. The search_node above should have narrowed
             // best_candidate.distance, so this path is rarely taken.
             if let Some(ref far) = node.far {
-                if distance >= node.radius - best_candidate.distance {
+                if distance + best_candidate.distance >= node.radius  {
                     Self::search_node(&*far, needle, best_candidate, user_data);
                 }
             }
