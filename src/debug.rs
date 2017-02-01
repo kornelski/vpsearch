@@ -1,7 +1,7 @@
 use super::*;
 
 use std::fmt::{Debug,Formatter,Error};
-impl<Item: Debug + Copy + MetricSpace<UserImpl>, UserImpl, Ownership> Debug for Tree<Item, Ownership, UserImpl> {
+impl<Item: Debug + Copy + MetricSpace<UserImpl>, UserImpl, Ownership> Debug for Tree<Item, UserImpl, Ownership> {
     fn fmt(&self, f:&mut Formatter) -> Result<(),Error> {
         write!(f, "digraph \"vp tree.dot\" {{\n{:?}}}", self.root)
     }

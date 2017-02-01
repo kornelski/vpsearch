@@ -138,7 +138,7 @@ struct Node<Item: MetricSpace<Impl> + Copy, Impl> {
 }
 
 /// The VP-Tree.
-pub struct Tree<Item: MetricSpace<Impl> + Copy, Ownership=Owned<()>, Impl=()> {
+pub struct Tree<Item: MetricSpace<Impl> + Copy, Impl=(), Ownership=Owned<()>> {
     root: Node<Item, Impl>,
     user_data: Ownership,
 }
@@ -165,7 +165,7 @@ impl<Item: MetricSpace<Impl>, Impl> ReturnByIndex<Item, Impl> {
     }
 }
 
-impl<Item: MetricSpace<Impl, UserData = ()> + Copy, Impl> Tree<Item, Owned<()>, Impl> {
+impl<Item: MetricSpace<Impl, UserData = ()> + Copy, Impl> Tree<Item, Impl, Owned<()>> {
 
     /**
      * Creates a new tree from items.
@@ -177,7 +177,7 @@ impl<Item: MetricSpace<Impl, UserData = ()> + Copy, Impl> Tree<Item, Owned<()>, 
     }
 }
 
-impl<U, Impl, Item: MetricSpace<Impl, UserData = U> + Copy> Tree<Item, Owned<U>, Impl> {
+impl<U, Impl, Item: MetricSpace<Impl, UserData = U> + Copy> Tree<Item, Impl, Owned<U>> {
     /**
      * Finds item closest to given needle (that can be any item) and Output *index* of the item in items array from `new()`.
      *
@@ -191,7 +191,7 @@ impl<U, Impl, Item: MetricSpace<Impl, UserData = U> + Copy> Tree<Item, Owned<U>,
     }
 }
 
-impl<Item: MetricSpace<Impl> + Copy, Ownership, Impl> Tree<Item, Ownership, Impl> {
+impl<Item: MetricSpace<Impl> + Copy, Ownership, Impl> Tree<Item, Impl, Ownership> {
     fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item, Impl>], items: &[Item], user_data: &Item::UserData) {
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx], user_data);
@@ -235,7 +235,7 @@ impl<Item: MetricSpace<Impl> + Copy, Ownership, Impl> Tree<Item, Ownership, Impl
     }
 }
 
-impl<Item: MetricSpace<Impl> + Copy, Impl> Tree<Item, Owned<Item::UserData>, Impl> {
+impl<Item: MetricSpace<Impl> + Copy, Impl> Tree<Item, Impl, Owned<Item::UserData>> {
     /**
      * Create a Vantage Point tree for fast nearest neighbor search.
      *
@@ -250,7 +250,7 @@ impl<Item: MetricSpace<Impl> + Copy, Impl> Tree<Item, Owned<Item::UserData>, Imp
     }
 }
 
-impl<Item: MetricSpace<Impl> + Copy, Impl> Tree<Item, (), Impl> {
+impl<Item: MetricSpace<Impl> + Copy, Impl> Tree<Item, Impl, ()> {
     /// The tree doesn't have to own the UserData. You can keep passing it to find_nearest().
     pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Self {
         Tree {
@@ -265,7 +265,7 @@ impl<Item: MetricSpace<Impl> + Copy, Impl> Tree<Item, (), Impl> {
     }
 }
 
-impl<Item: MetricSpace<Impl> + Copy, Ownership, Impl> Tree<Item, Ownership, Impl> {
+impl<Item: MetricSpace<Impl> + Copy, Ownership, Impl> Tree<Item, Impl, Ownership> {
     fn create_root_node(items: &[Item], user_data: &Item::UserData) -> Node<Item, Impl> {
         let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
             idx:i, distance: <Item::Distance as Bounded>::max_value(),

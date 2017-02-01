@@ -1,6 +1,6 @@
 [package]
 name = "vpsearch"
-version = "1.3.1"
+version = "1.3.2"
 authors = ["Kornel <pornel@pornel.net>"]
 description = "Vantage Point Tree search algorithm for fast nearest neighbour search in multi-dimensional metric spaces."
 homepage = "https://github.com/pornel/vpsearch"
