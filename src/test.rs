@@ -1,33 +1,19 @@
 // Test
 use super::*;
 
-#[derive(Copy, Clone)]
-struct Foo(f32);
-
-impl MetricSpace for Foo {
-    type Distance = f32;
-    type UserData = ();
-    fn distance(&self, other: &Self, _: &Self::UserData) -> Self::Distance {
-        (self.0 - other.0).abs()
-    }
-}
-
-#[derive(Copy, Clone)]
-struct Bar(i32);
-
-impl MetricSpace for Bar {
-    type UserData = usize;
-    type Distance = u32;
-
-    fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance {
-        assert_eq!(12345, *user_data);
-
-        (self.0 - other.0).abs() as u32
-    }
-}
-
 #[test]
 fn test_without_user_data() {
+    #[derive(Copy, Clone)]
+    struct Foo(f32);
+
+    impl MetricSpace for Foo {
+        type Distance = f32;
+        type UserData = ();
+        fn distance(&self, other: &Self, _: &Self::UserData) -> Self::Distance {
+            (self.0 - other.0).abs()
+        }
+    }
+
     let foos = [Foo(1.0), Foo(1.5), Foo(2.0)];
     let vp = Tree::new(&foos);
 
@@ -40,6 +26,20 @@ fn test_without_user_data() {
 
 #[test]
 fn test_with_user_data() {
+    #[derive(Copy, Clone)]
+    struct Bar(i32);
+
+    impl MetricSpace for Bar {
+        type UserData = usize;
+        type Distance = u32;
+
+        fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance {
+            assert_eq!(12345, *user_data);
+
+            (self.0 - other.0).abs() as u32
+        }
+    }
+
     let bars = [Bar(10), Bar(15), Bar(20)];
     let magic = 12345;
     let vp = Tree::new_with_user_data_owned(&bars, magic);
