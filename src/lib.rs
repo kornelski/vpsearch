@@ -138,7 +138,7 @@ struct Node<Item: MetricSpace<Impl> + Copy, Impl> {
 }
 
 /// The VP-Tree.
-pub struct Tree<Item: MetricSpace<Impl> + Copy, Ownership, Impl> {
+pub struct Tree<Item: MetricSpace<Impl> + Copy, Ownership=Owned<()>, Impl=()> {
     root: Node<Item, Impl>,
     user_data: Ownership,
 }

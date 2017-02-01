@@ -7,7 +7,7 @@ fn test_impl_orphan() {
     impl MetricSpace<MyImpl> for i32 {
         type UserData = ();
         type Distance = u32;
-        fn distance(&self, other: &Self, user_data: &()) -> u32 {
+        fn distance(&self, other: &Self, _user_data: &()) -> u32 {
             (self - other).abs() as u32
         }
     }
@@ -31,7 +31,7 @@ fn test_without_user_data() {
     }
 
     let foos = [Foo(1.0), Foo(1.5), Foo(2.0)];
-    let vp = Tree::new(&foos);
+    let vp: Tree<Foo> = Tree::new(&foos);
 
     assert_eq!((2, 98.0), vp.find_nearest(&Foo(100.0)));
     assert_eq!((0, 101.0), vp.find_nearest(&Foo(-100.0)));
