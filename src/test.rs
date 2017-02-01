@@ -2,6 +2,22 @@
 use super::*;
 
 #[test]
+fn test_impl_orphan() {
+    struct MyImpl;
+    impl MetricSpace<MyImpl> for i32 {
+        type UserData = ();
+        type Distance = u32;
+        fn distance(&self, other: &Self, user_data: &()) -> u32 {
+            (self - other).abs() as u32
+        }
+    }
+
+    let foos = [10,20,30,40];
+    let vp = Tree::new(&foos);
+    assert_eq!((2, 30-26), vp.find_nearest(&26));
+}
+
+#[test]
 fn test_without_user_data() {
     #[derive(Copy, Clone)]
     struct Foo(f32);

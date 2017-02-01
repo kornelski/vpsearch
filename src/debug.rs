@@ -1,13 +1,13 @@
 use super::*;
 
 use std::fmt::{Debug,Formatter,Error};
-impl<Item: Debug + Copy + MetricSpace, Ownership> Debug for Tree<Item, Ownership> {
+impl<Item: Debug + Copy + MetricSpace<UserImpl>, UserImpl, Ownership> Debug for Tree<Item, Ownership, UserImpl> {
     fn fmt(&self, f:&mut Formatter) -> Result<(),Error> {
         write!(f, "digraph \"vp tree.dot\" {{\n{:?}}}", self.root)
     }
 }
 
-impl<Item: Debug + Copy + MetricSpace> Debug for Node<Item> {
+impl<Item: Debug + Copy + MetricSpace<UserImpl>, UserImpl> Debug for Node<Item, UserImpl> {
     fn fmt(&self, f:&mut Formatter) -> Result<(),Error> {
         if self.near.is_some() {
             try!(write!(f, "\"{:?}\" -> \"{:?}\"\n", self.vantage_point, self.near.as_ref().unwrap().vantage_point));
