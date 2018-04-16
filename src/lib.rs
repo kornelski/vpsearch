@@ -2,7 +2,7 @@
 //!
 //! The VP tree algorithm doesn't need to know coordinates of items, only distances between them. It can efficiently search multi-dimensional spaces and abstract things as long as you can define similarity between them (e.g. points, colors, and even images).
 //!
-//! [Project page](https://github.com/pornel/vpsearch).
+//! [Project page](https://github.com/kornelski/vpsearch).
 //!
 //! ```rust
 //! extern crate vpsearch;
