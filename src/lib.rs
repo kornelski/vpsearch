@@ -88,7 +88,7 @@ pub trait MetricSpace<UserImplementationType=()> {
 ///     fn distance(&self) -> Item::Distance {
 ///         self.distance
 ///     }
-///     fn result(self, _: &Item::UserData) -> (usize, Item::Distance) {
+///     fn result(self, _: &Item::UserData) -> Self::Output {
 ///         (self.idx, self.distance)
 ///     }
 /// }
