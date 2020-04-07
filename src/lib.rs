@@ -28,6 +28,32 @@
 //!     println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
 //! }
 //! ```
+//!
+//! ```rust
+//! #[derive(Clone)]
+//! struct LotsaDimensions<'a>(&'a [u8; 64]);
+//!
+//! impl<'a> vpsearch::MetricSpace for LotsaDimensions<'a> {
+//!     type UserData = ();
+//!     type Distance = f64;
+//!
+//!     fn distance(&self, other: &Self, _: &Self::UserData) -> Self::Distance {
+//!         let dist_squared = self.0.iter().copied().zip(other.0.iter().copied())
+//!             .map(|(a, b)| {
+//!                 (a as i32 - b as i32).pow(2) as u32
+//!             }).sum::<u32>();
+//!
+//!         (dist_squared as f64).sqrt() // sqrt is required
+//!     }
+//! }
+//!
+//! fn main() {
+//!     let points = vec![LotsaDimensions(&[0; 64]), LotsaDimensions(&[5; 64]), LotsaDimensions(&[10; 64])];
+//!     let vp = vpsearch::Tree::new(&points);
+//!     let (index, _) = vp.find_nearest(&LotsaDimensions(&[6; 64]));
+//!     println!("The {}th element is the nearest", index);
+//! }
+//! ```
 
 
 
