@@ -4,6 +4,9 @@
 //!
 //! [Project page](https://github.com/kornelski/vpsearch).
 //!
+//!
+//! **This algorithm does not work with squared distances. When implementing Euclidean distance, you *MUST* use `sqrt()`**. You really really can't use that optimization. There's no way around it. Vantage Point trees require [metric spaces](https://en.wikipedia.org/wiki/Metric_space).
+//!
 //! ```rust
 //! #[derive(Copy, Clone)]
 //! struct Point {
@@ -90,7 +93,7 @@ pub trait MetricSpace<UserImplementationType=()> {
 
     /**
      * This function must return distance between two items that meets triangle inequality.
-     * Specifically, it can't return squared distance (you must use sqrt if you use Euclidean distance)
+     * Specifically, it **MUST NOT return a squared distance** (you must use sqrt if you use Euclidean distance)
      *
      * @param user_data Whatever you want. Passed from `new_with_user_data_*()`
      */

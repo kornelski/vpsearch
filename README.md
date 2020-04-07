@@ -6,6 +6,8 @@ The VP tree algorithm doesn't need to know coordinates of items, only distances 
 
 Please see [the API reference](https://docs.rs/vpsearch) or [examples](https://github.com/kornelski/vpsearch/tree/rust/examples) for details.
 
+**This algorithm does not work with squared distances. When implementing Euclidean distance, you *MUST* use `sqrt()`**. Vantage Point trees require [metric spaces](https://en.wikipedia.org/wiki/Metric_space).
+
 ```Rust
 #[derive(Copy, Clone)]
 struct Point {
@@ -20,7 +22,7 @@ impl vpsearch::MetricSpace for Point {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
 
-        // sqrt is required! The algorithm can't work with squared distances.
+        // You MUST use sqrt here! The algorithm will give wrong results for squared distances.
         (dx*dx + dy*dy).sqrt()
     }
 }
