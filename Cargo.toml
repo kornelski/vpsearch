@@ -10,9 +10,10 @@ keywords = ["similarity", "search", "knn", "distance"]
 license = "BSD-2-Clause"
 readme = "README.md"
 categories = ["algorithms", "data-structures"]
+edition = "2018"
 
 [dependencies]
-num-traits = "0.2.4"
+num-traits = "0.2.11"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

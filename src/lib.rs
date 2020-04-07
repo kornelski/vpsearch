@@ -5,8 +5,6 @@
 //! [Project page](https://github.com/kornelski/vpsearch).
 //!
 //! ```rust
-//! extern crate vpsearch;
-//!
 //! #[derive(Copy, Clone)]
 //! struct Point {
 //!     x: f32, y: f32,
@@ -31,7 +29,7 @@
 //! }
 //! ```
 
-extern crate num_traits;
+
 
 use std::cmp::Ordering;
 use std::ops::Add;
@@ -229,8 +227,8 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
             vantage_point: items[ref_idx].clone(),
             idx: ref_idx,
             radius: far_indexes[0].distance,
-            near: Self::create_node(near_indexes, items, user_data).map(|i| Box::new(i)),
-            far: Self::create_node(far_indexes, items, user_data).map(|i| Box::new(i)),
+            near: Self::create_node(near_indexes, items, user_data).map(Box::new),
+            far: Self::create_node(far_indexes, items, user_data).map(Box::new),
         })
     }
 }

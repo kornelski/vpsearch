@@ -7,8 +7,6 @@ The VP tree algorithm doesn't need to know coordinates of items, only distances 
 Please see `lib.rs` for details. [API reference](https://docs.rs/vpsearch/).
 
 ```Rust
-extern crate vpsearch;
-
 #[derive(Copy, Clone)]
 struct Point {
     x: f32, y: f32,

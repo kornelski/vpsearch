@@ -1,5 +1,3 @@
-extern crate vpsearch;
-
 #[derive(Copy, Clone)]
 struct Point {
     x: f32, y: f32,
