@@ -1,15 +1,18 @@
 [package]
 name = "vpsearch"
-version = "1.3.5"
-authors = ["Kornel <pornel@pornel.net>"]
+version = "1.3.6"
+authors = ["Kornel <kornel@geekhood.net>"]
 description = "Vantage Point Tree search algorithm for fast nearest neighbour search in multi-dimensional metric spaces."
-homepage = "https://crates.rs/crates/vpsearch"
+homepage = "https://lib.rs/crates/vpsearch"
 repository = "https://github.com/kornelski/vpsearch.git"
 documentation = "https://docs.rs/vpsearch/"
-keywords = ["similarity", "search","knn","distance"]
+keywords = ["similarity", "search", "knn", "distance"]
 license = "BSD-2-Clause"
 readme = "README.md"
 categories = ["algorithms", "data-structures"]
 
 [dependencies]
 num-traits = "0.2.4"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
