@@ -99,7 +99,14 @@ pub trait MetricSpace<UserImplementationType=()> {
 
 /// You can implement this if you want to peek at all visited elements
 ///
-/// ```rust,ignore
+/// ```rust
+/// # use vpsearch::*;
+/// struct Impl;
+/// struct ReturnByIndex<I: MetricSpace<Impl>> {
+///    distance: I::Distance,
+///    idx: usize,
+/// }
+///
 /// impl<Item: MetricSpace<Impl> + Clone> BestCandidate<Item, Impl> for ReturnByIndex<Item> {
 ///     type Output = (usize, Item::Distance);
 ///
