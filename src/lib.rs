@@ -170,7 +170,7 @@ struct Node<Item: MetricSpace<Impl> + Clone, Impl> {
     far: u32,
     vantage_point: Item, // Pointer to the item (value) represented by the current node
     radius: Item::Distance,    // How far the `near` node stretches
-    idx: usize,             // Index of the `vantage_point` in the original items array
+    idx: u32,             // Index of the `vantage_point` in the original items array
 }
 
 /// The VP-Tree.
@@ -185,7 +185,7 @@ pub struct Tree<Item: MetricSpace<Impl> + Clone, Impl=(), Ownership=Owned<()>> {
 */
 struct Tmp<Item: MetricSpace<Impl>, Impl> {
     distance: Item::Distance,
-    idx: usize,
+    idx: u32,
 }
 
 struct ReturnByIndex<Item: MetricSpace<Impl>, Impl> {
@@ -231,7 +231,7 @@ impl<U, Impl, Item: MetricSpace<Impl, UserData = U> + Clone> Tree<Item, Impl, Ow
 impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownership> {
     fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item, Impl>], items: &[Item], user_data: &Item::UserData) {
         for i in indexes.iter_mut() {
-            i.distance = vantage_point.distance(&items[i.idx], user_data);
+            i.distance = vantage_point.distance(&items[i.idx as usize], user_data);
         }
         indexes.sort_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
     }
@@ -245,7 +245,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
             let node_idx = nodes.len();
             nodes.push(Node{
                 near: NO_NODE, far: NO_NODE,
-                vantage_point: items[indexes[0].idx].clone(),
+                vantage_point: items[indexes[0].idx as usize].clone(),
                 idx: indexes[0].idx,
                 radius: <Item::Distance as Bounded>::max_value(),
             });
@@ -257,13 +257,13 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
         // Removes the `ref_idx` item from remaining items, because it's included in the current node
         let rest = &mut indexes[1..];
 
-        Self::sort_indexes_by_distance(items[ref_idx].clone(), rest, items, user_data);
+        Self::sort_indexes_by_distance(items[ref_idx as usize].clone(), rest, items, user_data);
 
         // Remaining items are split by the median distance
         let half_idx = rest.len()/2;
 
         let (near_indexes, far_indexes) = rest.split_at_mut(half_idx);
-        let vantage_point = items[ref_idx].clone();
+        let vantage_point = items[ref_idx as usize].clone();
         let radius = far_indexes[0].distance;
 
         // push first to reserve space before its children
@@ -322,8 +322,10 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, ()> {
 
 impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownership> {
     fn create_root_node(items: &[Item], nodes: &mut Vec<Node<Item, Impl>>, user_data: &Item::UserData) -> u32 {
-        let mut indexes: Vec<_> = (0..items.len()).map(|i| Tmp{
-            idx:i, distance: <Item::Distance as Bounded>::max_value(),
+        assert!(items.len() < (u32::max_value()/2) as usize);
+
+        let mut indexes: Vec<_> = (0..items.len() as u32).map(|i| Tmp{
+            idx: i, distance: <Item::Distance as Bounded>::max_value(),
         }).collect();
 
         Self::create_node(&mut indexes[..], nodes, items, user_data) as u32
@@ -332,7 +334,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
     fn search_node<B: BestCandidate<Item, Impl>>(node: &Node<Item, Impl>, nodes: &[Node<Item, Impl>], needle: &Item, best_candidate: &mut B, user_data: &Item::UserData) {
         let distance = needle.distance(&node.vantage_point, user_data);
 
-        best_candidate.consider(&node.vantage_point, distance, node.idx, user_data);
+        best_candidate.consider(&node.vantage_point, distance, node.idx as usize, user_data);
 
         // Recurse towards most likely candidate first to narrow best candidate's distance as soon as possible
         if distance < node.radius {
