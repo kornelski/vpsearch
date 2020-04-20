@@ -95,7 +95,7 @@ pub trait MetricSpace<UserImplementationType=()> {
      * This function must return distance between two items that meets triangle inequality.
      * Specifically, it **MUST NOT return a squared distance** (you must use sqrt if you use Euclidean distance)
      *
-     * @param user_data Whatever you want. Passed from `new_with_user_data_*()`
+     * * `user_data` —Whatever you want. Passed from `new_with_user_data_*()`
      */
     fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance;
 }
@@ -128,11 +128,11 @@ pub trait MetricSpace<UserImplementationType=()> {
 /// }
 /// ```
 pub trait BestCandidate<Item: MetricSpace<Impl> + Clone, Impl> where Self: Sized {
-    /// find_nearest() will return this type
+    /// `find_nearest()` will return this type
     type Output;
 
     /// This is a visitor method. If the given distance is smaller than previously seen, keep the item (or its index).
-    /// UserData is the same as for `MetricSpace<Impl>`, and it's `()` by default.
+    /// `UserData` is the same as for `MetricSpace<Impl>`, and it's `()` by default.
     fn consider(&mut self, item: &Item, distance: Item::Distance, candidate_index: usize, user_data: &Item::UserData);
 
     /// Minimum distance seen so far
@@ -205,9 +205,9 @@ impl<Item: MetricSpace<Impl>, Impl> ReturnByIndex<Item, Impl> {
 impl<Item: MetricSpace<Impl, UserData = ()> + Clone, Impl> Tree<Item, Impl, Owned<()>> {
 
     /**
-     * Creates a new tree from items.
+     * Creates a new tree from items. Maximum number of items is 2^31.
      *
-     * @see Tree::new_with_user_data_owned
+     * See `Tree::new_with_user_data_owned`.
      */
     pub fn new(items: &[Item]) -> Self {
         Self::new_with_user_data_owned(items, ())
@@ -216,12 +216,10 @@ impl<Item: MetricSpace<Impl, UserData = ()> + Clone, Impl> Tree<Item, Impl, Owne
 
 impl<U, Impl, Item: MetricSpace<Impl, UserData = U> + Clone> Tree<Item, Impl, Owned<U>> {
     /**
-     * Finds item closest to given needle (that can be any item) and Output *index* of the item in items array from `new()`.
+     * Finds item closest to the given `needle` (that can be any item) and returns *index* of the item in items array from `new()`.
      *
-     * @param  needle       The query.
-     * @return              Index of the nearest item found and the distance from the nearest item
+     * Returns the index of the nearest item (index from the items slice passed to `new()`) found and the distance from the nearest item.
      */
-
     #[inline]
     pub fn find_nearest(&self, needle: &Item) -> (usize, Item::Distance) {
         self.find_nearest_with_user_data(needle, &self.user_data.0)
@@ -289,8 +287,8 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, Owned<Item::UserDat
     /**
      * Create a Vantage Point tree for fast nearest neighbor search.
      *
-     * @param  items        Array of items that will be searched.
-     * @param  user_data    Reference to any object that is passed down to item.distance()
+     * * `items` —       Array of items that will be searched.
+     * * `user_data` —   Reference to any object that is passed down to item.distance()
      */
     pub fn new_with_user_data_owned(items: &[Item], user_data: Item::UserData) -> Self {
         let mut nodes = Vec::new();

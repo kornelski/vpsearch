@@ -14,6 +14,7 @@ struct Point {
     x: f32, y: f32,
 }
 
+/// `MetricSpace` makes items comparable. It's a bit like Rust's `PartialOrd`.
 impl vpsearch::MetricSpace for Point {
     type UserData = ();
     type Distance = f32;
@@ -35,4 +36,28 @@ fn main() {
 
     println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
 }
+```
+
+## Implementing `MetricSpace` for Rust built-in types
+
+This library includes a workaround for orphan rules. You need to add your crate's type when implementing `MetricSpace`:
+
+```rust
+struct MyImpl; // it can be any type, as long as it's yours
+impl vpsearch::MetricSpace<MyImpl> for Vec<u8> {
+    // continue as usual
+}
+```
+
+## Memory efficiency tip
+
+`Tree` clones all the items and puts them in the tree. If the items are too big to clone and you'd rather keep the items elsewhere, you can!
+
+Instead of storing the items, make the tree store indices into your items storage, and pass actual items as `user_data` to your `MetricSpace::distance()` function.
+
+```rust
+let items = /* your actual items are here */;
+let indices: Vec<_> = (0...items.len() as u32).collect();
+let tree = Tree::new_with_user_data_ref(&items, &indices);
+let res = tree.find_nearest(&needle, &items);
 ```
