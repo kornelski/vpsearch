@@ -252,10 +252,11 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
             return node_idx as u32;
         }
 
-        let ref_idx = indexes[0].idx;
+        let last = indexes.len()-1;
+        let ref_idx = indexes[last].idx;
 
         // Removes the `ref_idx` item from remaining items, because it's included in the current node
-        let rest = &mut indexes[1..];
+        let rest = &mut indexes[..last];
 
         Self::sort_indexes_by_distance(items[ref_idx as usize].clone(), rest, items, user_data);
 
