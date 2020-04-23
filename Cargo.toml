@@ -1,6 +1,6 @@
 [package]
 name = "vpsearch"
-version = "2.0.0-alpha.1"
+version = "2.0.0"
 authors = ["Kornel <kornel@geekhood.net>"]
 description = "Vantage Point Tree search algorithm for fast nearest neighbour search in multi-dimensional metric spaces."
 homepage = "https://lib.rs/crates/vpsearch"

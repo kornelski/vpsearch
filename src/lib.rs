@@ -231,7 +231,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx as usize], user_data);
         }
-        indexes.sort_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
+        indexes.sort_unstable_by(|a, b| if a.distance < b.distance {Ordering::Less} else {Ordering::Greater});
     }
 
     fn create_node(indexes: &mut [Tmp<Item, Impl>], nodes: &mut Vec<Node<Item, Impl>>, items: &[Item], user_data: &Item::UserData) -> u32 {
@@ -291,7 +291,7 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, Owned<Item::UserDat
      * * `user_data` —   Reference to any object that is passed down to item.distance()
      */
     pub fn new_with_user_data_owned(items: &[Item], user_data: Item::UserData) -> Self {
-        let mut nodes = Vec::new();
+        let mut nodes = Vec::with_capacity(items.len());
         let root = Self::create_root_node(items, &mut nodes, &user_data);
         Tree {
             root,
@@ -304,7 +304,7 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, Owned<Item::UserDat
 impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, ()> {
     /// The tree doesn't have to own the UserData. You can keep passing it to find_nearest().
     pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Self {
-        let mut nodes = Vec::new();
+        let mut nodes = Vec::with_capacity(items.len());
         let root = Self::create_root_node(items, &mut nodes, &user_data);
         Tree {
             root,
