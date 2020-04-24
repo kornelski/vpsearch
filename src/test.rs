@@ -38,6 +38,11 @@ fn test_without_user_data() {
     assert_eq!((1, 0.0), vp.find_nearest(&Foo(1.5)));
     assert_eq!((1, 0.125), vp.find_nearest(&Foo(1.5-0.125)));
     assert_eq!((2, 0.125), vp.find_nearest(&Foo(2.0-0.125)));
+
+    let empty: Tree<Foo> = Tree::new(&[]);
+    let (idx, dist) = empty.find_nearest(&Foo(100.0));
+    assert!(dist > 99999999.);
+    assert_eq!(0, idx);
 }
 
 #[test]

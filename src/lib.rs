@@ -369,7 +369,9 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
     #[inline]
     /// All the bells and whistles version. For best_candidate implement `BestCandidate<Item, Impl>` trait.
     pub fn find_nearest_custom<ReturnBy: BestCandidate<Item, Impl>>(&self, needle: &Item, user_data: &Item::UserData, mut best_candidate: ReturnBy) -> ReturnBy::Output {
-        Self::search_node(&self.nodes[self.root as usize], &self.nodes, needle, &mut best_candidate, user_data);
+        if let Some(root) = self.nodes.get(self.root as usize) {
+            Self::search_node(root, &self.nodes, needle, &mut best_candidate, user_data);
+        }
 
         best_candidate.result(user_data)
     }
