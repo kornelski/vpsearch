@@ -89,7 +89,7 @@ pub trait MetricSpace<UserImplementationType=()> {
     type UserData;
 
     /// This is a fancy way of saying it should be `f32` or `u32`
-    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance>;
+    type Distance: Copy + PartialOrd + Bounded + Default + Add<Output = Self::Distance> ;
 
     /**
      * This function must return distance between two items that meets triangle inequality.
