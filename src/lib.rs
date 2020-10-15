@@ -62,7 +62,6 @@
 
 use std::cmp::Ordering;
 use std::ops::Add;
-use std::fmt::Debug;
 use std::marker::Sized;
 use num_traits::Bounded;
 
@@ -90,7 +89,7 @@ pub trait MetricSpace<UserImplementationType = ()> {
     type UserData;
 
     /// This is a fancy way of saying it should be `f32` or `u32`
-    type Distance: Copy + PartialOrd + Bounded + Default + Debug + Add<Output = Self::Distance>;
+    type Distance: Copy + PartialOrd + Bounded + Add<Output = Self::Distance>;
 
     /**
      * This function must return distance between two items that meets triangle inequality.

@@ -1,6 +1,7 @@
 use vpsearch::{BestCandidate, MetricSpace};
 
 use std::collections::HashSet;
+use num_traits::Bounded;
 
 #[derive(Clone, Debug)]
 struct PointN {
@@ -45,7 +46,7 @@ impl<Item: MetricSpace<Impl>, Impl> CountBasedNeighborhood<Item, Impl> {
     fn new(item_count: usize) -> Self {
         CountBasedNeighborhood {
             max_item_count: item_count,
-            max_observed_distance: <Item::Distance as Default>::default(),
+            max_observed_distance: <Item::Distance as Bounded>::min_value(),
             distance_x_index: Vec::<(Item::Distance, usize)>::new(),
         }
     }
