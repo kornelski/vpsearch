@@ -84,12 +84,12 @@ pub struct Owned<T>(T);
 /// /// That dummy struct disambiguates between yours and everyone else's impl for a tuple:
 /// struct MyXYCoordinates;
 /// impl MetricSpace<MyXYCoordinates> for (f32,f32) {/*…*/}
-pub trait MetricSpace<UserImplementationType=()> {
+pub trait MetricSpace<UserImplementationType = ()> {
     /// This is used as a context for comparisons. Use `()` if the elements already contain all the data you need.
     type UserData;
 
     /// This is a fancy way of saying it should be `f32` or `u32`
-    type Distance: Copy + PartialOrd + Bounded + Add<Output=Self::Distance>;
+    type Distance: Copy + PartialOrd + Bounded + Add<Output = Self::Distance>;
 
     /**
      * This function must return distance between two items that meets triangle inequality.
