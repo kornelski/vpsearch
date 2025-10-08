@@ -9,8 +9,8 @@ struct PointN {
 
 /// Point structure that will end up in the tree
 impl PointN {
-    pub fn new(data: &Vec<f32>) -> Self {
-        PointN { data: data.clone() }
+    pub fn new(data: impl Into<Vec<f32>>) -> Self {
+        Self { data: data.into() }
     }
 }
 
@@ -38,10 +38,10 @@ struct RadiusBasedNeighborhood<Item: MetricSpace<Impl>, Impl> {
 }
 
 impl<Item: MetricSpace<Impl>, Impl> RadiusBasedNeighborhood<Item, Impl> {
-    /// Helper function for creating the RadiusBasedNeighborhood struct.
+    /// Helper function for creating the `RadiusBasedNeighborhood` struct.
     /// Here `max_distance` is an exclusive upper bound to the euclidean distance.
     fn new(max_distance: Item::Distance) -> Self {
-        RadiusBasedNeighborhood {
+        Self {
             max_distance,
             ids: HashSet::<usize>::new(),
         }
@@ -81,27 +81,27 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> BestCandidate<Item, Impl>
 
 fn main() {
     let points = vec![
-        PointN::new(&vec![2.0, 3.0]),
-        PointN::new(&vec![0.0, 1.0]),
-        PointN::new(&vec![4.0, 5.0]),
+        PointN::new([2.0, 3.0]),
+        PointN::new([0.0, 1.0]),
+        PointN::new([4.0, 5.0]),
     ];
     let tree = vpsearch::Tree::new(&points);
 
     // Search with a distance of 0, expect no points to be returned
     let expected = HashSet::new();
     let actual = tree.find_nearest_custom(
-        &PointN::new(&vec![1.0, 2.0]),
+        &PointN::new([1.0, 2.0]),
         &(),
         RadiusBasedNeighborhood::new(0.0f32),
     );
     assert_eq!(actual, expected);
 
     // Search with a distance of 100, expect all points to be returned
-    let expected = [0, 1, 2].iter().cloned().collect::<HashSet<usize>>();
+    let expected = [0, 1, 2].iter().copied().collect::<HashSet<usize>>();
     let actual = tree.find_nearest_custom(
-        &PointN::new(&vec![1.0, 2.0]),
+        &PointN::new([1.0, 2.0]),
         &(),
         RadiusBasedNeighborhood::new(100.0f32),
     );
-    assert_eq!(actual, expected)
+    assert_eq!(actual, expected);
 }

@@ -8,7 +8,7 @@ fn test_impl_orphan() {
         type UserData = ();
         type Distance = u32;
         fn distance(&self, other: &Self, _user_data: &()) -> u32 {
-            (self - other).abs() as u32
+            (self - other).unsigned_abs()
         }
     }
 
@@ -57,7 +57,7 @@ fn test_with_user_data() {
         fn distance(&self, other: &Self, user_data: &Self::UserData) -> Self::Distance {
             assert_eq!(12345, *user_data);
 
-            (self.0 - other.0).abs() as u32
+            (self.0 - other.0).unsigned_abs()
         }
     }
 

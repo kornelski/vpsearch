@@ -24,12 +24,10 @@
 //!     }
 //! }
 //!
-//! fn main() {
-//!     let points = vec![Point{x:2.0,y:3.0}, Point{x:0.0,y:1.0}, Point{x:4.0,y:5.0}];
-//!     let vp = vpsearch::Tree::new(&points);
-//!     let (index, _) = vp.find_nearest(&Point{x:1.0,y:2.0});
-//!     println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
-//! }
+//! let points = vec![Point{x:2.0,y:3.0}, Point{x:0.0,y:1.0}, Point{x:4.0,y:5.0}];
+//! let vp = vpsearch::Tree::new(&points);
+//! let (index, _) = vp.find_nearest(&Point{x:1.0,y:2.0});
+//! println!("The nearest point is at ({}, {})", points[index].x, points[index].y);
 //! ```
 //!
 //! ```rust
@@ -50,12 +48,10 @@
 //!     }
 //! }
 //!
-//! fn main() {
-//!     let points = vec![LotsaDimensions(&[0; 64]), LotsaDimensions(&[5; 64]), LotsaDimensions(&[10; 64])];
-//!     let vp = vpsearch::Tree::new(&points);
-//!     let (index, _) = vp.find_nearest(&LotsaDimensions(&[6; 64]));
-//!     println!("The {}th element is the nearest", index);
-//! }
+//! let points = vec![LotsaDimensions(&[0; 64]), LotsaDimensions(&[5; 64]), LotsaDimensions(&[10; 64])];
+//! let vp = vpsearch::Tree::new(&points);
+//! let (index, _) = vp.find_nearest(&LotsaDimensions(&[6; 64]));
+//! println!("The {}th element is the nearest", index);
 //! ```
 
 
@@ -163,7 +159,7 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> BestCandidate<Item, Impl> for Return
     }
 }
 
-const NO_NODE: u32 = u32::max_value();
+const NO_NODE: u32 = u32::MAX;
 
 struct Node<Item: MetricSpace<Impl> + Clone, Impl> {
     near: u32,
@@ -195,7 +191,7 @@ struct ReturnByIndex<Item: MetricSpace<Impl>, Impl> {
 
 impl<Item: MetricSpace<Impl>, Impl> ReturnByIndex<Item, Impl> {
     fn new() -> Self {
-        ReturnByIndex {
+        Self {
             distance: <Item::Distance as Bounded>::max_value(),
             idx: 0,
         }
@@ -227,7 +223,7 @@ impl<U, Impl, Item: MetricSpace<Impl, UserData = U> + Clone> Tree<Item, Impl, Ow
 }
 
 impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownership> {
-    fn sort_indexes_by_distance(vantage_point: Item, indexes: &mut [Tmp<Item, Impl>], items: &[Item], user_data: &Item::UserData) {
+    fn sort_indexes_by_distance(vantage_point: &Item, indexes: &mut [Tmp<Item, Impl>], items: &[Item], user_data: &Item::UserData) {
         for i in indexes.iter_mut() {
             i.distance = vantage_point.distance(&items[i.idx as usize], user_data);
         }
@@ -235,7 +231,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
     }
 
     fn create_node(indexes: &mut [Tmp<Item, Impl>], nodes: &mut Vec<Node<Item, Impl>>, items: &[Item], user_data: &Item::UserData) -> u32 {
-        if indexes.len() == 0 {
+        if indexes.is_empty() {
             return NO_NODE;
         }
 
@@ -256,7 +252,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
         // Removes the `ref_idx` item from remaining items, because it's included in the current node
         let rest = &mut indexes[..last];
 
-        Self::sort_indexes_by_distance(items[ref_idx as usize].clone(), rest, items, user_data);
+        Self::sort_indexes_by_distance(&items[ref_idx as usize], rest, items, user_data);
 
         // Remaining items are split by the median distance
         let half_idx = rest.len()/2;
@@ -288,12 +284,12 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, Owned<Item::UserDat
      * Create a Vantage Point tree for fast nearest neighbor search.
      *
      * * `items` —       Array of items that will be searched.
-     * * `user_data` —   Reference to any object that is passed down to item.distance()
+     * * `user_data` —   Reference to any object that is passed down to `item.distance()`
      */
     pub fn new_with_user_data_owned(items: &[Item], user_data: Item::UserData) -> Self {
         let mut nodes = Vec::with_capacity(items.len());
         let root = Self::create_root_node(items, &mut nodes, &user_data);
-        Tree {
+        Self {
             root,
             nodes,
             user_data: Owned(user_data),
@@ -302,11 +298,11 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, Owned<Item::UserDat
 }
 
 impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, ()> {
-    /// The tree doesn't have to own the UserData. You can keep passing it to find_nearest().
+    /// The tree doesn't have to own the `UserData`. You can keep passing it to `find_nearest()`.
     pub fn new_with_user_data_ref(items: &[Item], user_data: &Item::UserData) -> Self {
         let mut nodes = Vec::with_capacity(items.len());
-        let root = Self::create_root_node(items, &mut nodes, &user_data);
-        Tree {
+        let root = Self::create_root_node(items, &mut nodes, user_data);
+        Self {
             root,
             nodes,
             user_data: (),
@@ -321,13 +317,13 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> Tree<Item, Impl, ()> {
 
 impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownership> {
     fn create_root_node(items: &[Item], nodes: &mut Vec<Node<Item, Impl>>, user_data: &Item::UserData) -> u32 {
-        assert!(items.len() < (u32::max_value()/2) as usize);
+        assert!(items.len() < (u32::MAX/2) as usize);
 
         let mut indexes: Vec<_> = (0..items.len() as u32).map(|i| Tmp{
             idx: i, distance: <Item::Distance as Bounded>::max_value(),
         }).collect();
 
-        Self::create_node(&mut indexes[..], nodes, items, user_data) as u32
+        Self::create_node(&mut indexes[..], nodes, items, user_data)
     }
 
     fn search_node<B: BestCandidate<Item, Impl>>(node: &Node<Item, Impl>, nodes: &[Node<Item, Impl>], needle: &Item, best_candidate: &mut B, user_data: &Item::UserData) {
@@ -344,20 +340,18 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
             // The best node (final answer) may be just ouside the radius, but not farther than
             // the best distance we know so far. The search_node above should have narrowed
             // best_candidate.distance, so this path is rarely taken.
-            if let Some(far) = nodes.get(node.far as usize) {
-                if distance + best_candidate.distance() >= node.radius {
+            if let Some(far) = nodes.get(node.far as usize)
+                && distance + best_candidate.distance() >= node.radius {
                     Self::search_node(far, nodes, needle, best_candidate, user_data);
                 }
-            }
         } else {
             if let Some(far) = nodes.get(node.far as usize) {
                 Self::search_node(far, nodes, needle, best_candidate, user_data);
             }
-            if let Some(near) = nodes.get(node.near as usize) {
-                if distance <= node.radius + best_candidate.distance() {
+            if let Some(near) = nodes.get(node.near as usize)
+                && distance <= node.radius + best_candidate.distance() {
                     Self::search_node(near, nodes, needle, best_candidate, user_data);
                 }
-            }
         }
     }
 
@@ -367,7 +361,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
     }
 
     #[inline]
-    /// All the bells and whistles version. For best_candidate implement `BestCandidate<Item, Impl>` trait.
+    /// All the bells and whistles version. For `best_candidate` implement `BestCandidate<Item, Impl>` trait.
     pub fn find_nearest_custom<ReturnBy: BestCandidate<Item, Impl>>(&self, needle: &Item, user_data: &Item::UserData, mut best_candidate: ReturnBy) -> ReturnBy::Output {
         if let Some(root) = self.nodes.get(self.root as usize) {
             Self::search_node(root, &self.nodes, needle, &mut best_candidate, user_data);

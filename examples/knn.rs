@@ -10,8 +10,8 @@ struct PointN {
 
 /// Point structure that will end up in the tree
 impl PointN {
-    pub fn new(data: &Vec<f32>) -> Self {
-        PointN { data: data.clone() }
+    pub fn new(data: impl Into<Vec<f32>>) -> Self {
+        Self { data: data.into() }
     }
 }
 
@@ -41,10 +41,10 @@ struct CountBasedNeighborhood<Item: MetricSpace<Impl>, Impl> {
 }
 
 impl<Item: MetricSpace<Impl>, Impl> CountBasedNeighborhood<Item, Impl> {
-    /// Helper function for creating the CountBasedNeighborhood struct.
+    /// Helper function for creating the `CountBasedNeighborhood` struct.
     /// Here `item_count` is the amount of items returned, the k in knn.
     fn new(item_count: usize) -> Self {
-        CountBasedNeighborhood {
+        Self {
             max_item_count: item_count,
             max_observed_distance: <Item::Distance as Bounded>::min_value(),
             distance_x_index: Vec::<(Item::Distance, usize)>::new(),
@@ -64,13 +64,13 @@ impl<Item: MetricSpace<Impl>, Impl> CountBasedNeighborhood<Item, Impl> {
             // Prefrom a single insertion sort pass. If the distance of the element
             while n > 0 && self.distance_x_index[n].0 < self.distance_x_index[n - 1].0 {
                 self.distance_x_index.swap(n, n - 1);
-                n = n - 1;
+                n -= 1;
             }
             self.distance_x_index.truncate(self.max_item_count);
         }
         // Update the max observed distance, unwrap is safe because this function
         // inserts a point and the `max_item_count` is more then 0.
-        self.max_observed_distance = self.distance_x_index.last().unwrap().0
+        self.max_observed_distance = self.distance_x_index.last().unwrap().0;
     }
 }
 
@@ -126,35 +126,35 @@ impl<Item: MetricSpace<Impl> + Clone, Impl> BestCandidate<Item, Impl>
 
 fn main() {
     let points = vec![
-        PointN::new(&vec![2.0, 3.0]),
-        PointN::new(&vec![0.0, 1.0]),
-        PointN::new(&vec![4.0, 5.0]),
+        PointN::new([2.0, 3.0]),
+        PointN::new([0.0, 1.0]),
+        PointN::new([4.0, 5.0]),
     ];
     let tree = vpsearch::Tree::new(&points);
 
     // Search with a neigboord size of 1, expect a single points to be returned
     let actual = tree.find_nearest_custom(
-        &PointN::new(&vec![1.0, 2.0]),
+        &PointN::new([1.0, 2.0]),
         &(),
         CountBasedNeighborhood::new(1),
     );
     assert_eq!(actual.len(), 1);
 
     // Search with a neigboord size of 2, expect a two points to be returned
-    let expected = [0, 1].iter().cloned().collect::<HashSet<usize>>();
+    let expected = [0, 1].iter().copied().collect::<HashSet<usize>>();
     let actual = tree.find_nearest_custom(
-        &PointN::new(&vec![1.0, 2.0]),
+        &PointN::new([1.0, 2.0]),
         &(),
         CountBasedNeighborhood::new(2),
     );
     assert_eq!(actual, expected);
 
     // Search with a neigboord size of 10, expect all points to be returned
-    let expected = [0, 1, 2].iter().cloned().collect::<HashSet<usize>>();
+    let expected = [0, 1, 2].iter().copied().collect::<HashSet<usize>>();
     let actual = tree.find_nearest_custom(
-        &PointN::new(&vec![1.0, 2.0]),
+        &PointN::new([1.0, 2.0]),
         &(),
         CountBasedNeighborhood::new(10),
     );
-    assert_eq!(actual, expected)
+    assert_eq!(actual, expected);
 }

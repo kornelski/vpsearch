@@ -1,4 +1,4 @@
-use super::*;
+use super::{Tree, MetricSpace, Node, NO_NODE};
 
 use std::fmt::{Debug,Formatter,Error};
 impl<Item: Debug + Clone + MetricSpace<UserImpl>, UserImpl, Ownership> Debug for Tree<Item, UserImpl, Ownership> {
@@ -10,11 +10,11 @@ impl<Item: Debug + Clone + MetricSpace<UserImpl>, UserImpl, Ownership> Debug for
 impl<Item: Debug + Clone + MetricSpace<UserImpl>, UserImpl> Debug for Node<Item, UserImpl> {
     fn fmt(&self, f:&mut Formatter<'_>) -> Result<(),Error> {
         if self.near != NO_NODE {
-            write!(f, "\"{:?}\" -> \"{:?}\"\n", self.vantage_point, self.near)?;
+            writeln!(f, "\"{:?}\" -> \"{:?}\"", self.vantage_point, self.near)?;
         }
         if self.far != NO_NODE {
-            write!(f, "\"{:?}\" -> \"{:?}\"\n", self.vantage_point, self.far)?;
+            writeln!(f, "\"{:?}\" -> \"{:?}\"", self.vantage_point, self.far)?;
         }
-        return Ok(());
+        Ok(())
     }
 }

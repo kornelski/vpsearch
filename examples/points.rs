@@ -11,7 +11,7 @@ impl vpsearch::MetricSpace for Point {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
 
-        (dx*dx + dy*dy).sqrt() // sqrt is required
+        dx.hypot(dy) // can't use manhattan nor squared dist
     }
 }
 
