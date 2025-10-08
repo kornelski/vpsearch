@@ -1,6 +1,6 @@
 [package]
 name = "vpsearch"
-version = "2.0.1"
+version = "2.1.0"
 authors = ["Kornel <kornel@geekhood.net>"]
 description = "Vantage Point Tree search algorithm for fast nearest neighbour search in multi-dimensional metric spaces."
 homepage = "https://lib.rs/crates/vpsearch"
@@ -10,10 +10,12 @@ keywords = ["similarity", "search", "knn", "distance"]
 license = "BSD-2-Clause"
 readme = "README.md"
 categories = ["algorithms", "data-structures"]
-edition = "2018"
+edition = "2024"
+rust-version = "1.88"
 
 [dependencies]
-num-traits = "0.2.11"
+num-traits = "0.2.19"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
+rustdoc-args = ["--generate-link-to-definition"]

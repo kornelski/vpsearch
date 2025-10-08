@@ -57,6 +57,7 @@
 
 
 use std::cmp::Ordering;
+use std::hint::select_unpredictable;
 use std::ops::Add;
 use std::marker::Sized;
 use num_traits::Bounded;
@@ -332,7 +333,7 @@ impl<Item: MetricSpace<Impl> + Clone, Ownership, Impl> Tree<Item, Impl, Ownershi
         best_candidate.consider(&node.vantage_point, distance, node.idx as usize, user_data);
 
         // Recurse towards most likely candidate first to narrow best candidate's distance as soon as possible
-        if distance < node.radius {
+        if select_unpredictable(distance < node.radius, true, false)  {
             // No-node case uses out-of-bounds index, so this reuses a safe bounds check as the "null" check
             if let Some(near) = nodes.get(node.near as usize) {
                 Self::search_node(near, nodes, needle, best_candidate, user_data);
